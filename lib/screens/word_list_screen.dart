@@ -1,0 +1,269 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:glyphora_language_core/glyphora_language_core.dart';
+
+import '../data/dictionary_database.dart';
+import '../models/word_entry.dart';
+import 'word_detail_screen.dart';
+
+class WordListScreen extends StatefulWidget {
+  final LanguageConfig language;
+  final LanguageVariantConfig? variant;
+
+  const WordListScreen({
+    super.key,
+    required this.language,
+    this.variant,
+  });
+
+  @override
+  State<WordListScreen> createState() =>
+      _WordListScreenState();
+}
+
+class _WordListScreenState
+    extends State<WordListScreen> {
+  final DictionaryDatabase _database =
+      DictionaryDatabase();
+
+  Timer? _searchTimer;
+
+  List<WordEntry> _entries = const [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadEntries();
+  }
+
+  @override
+  void didUpdateWidget(
+    covariant WordListScreen oldWidget,
+  ) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.language.code !=
+        widget.language.code) {
+      _loadEntries();
+    }
+  }
+
+  @override
+  void dispose() {
+    _searchTimer?.cancel();
+    _database.closeAll();
+    super.dispose();
+  }
+
+  Future<void> _loadEntries({
+    String keyword = '',
+  }) async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final entries =
+          await _database.getWords(
+        languageCode:
+            widget.language.code,
+        keyword: keyword,
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _entries = entries;
+        _isLoading = false;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _error = error.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _onSearchChanged(String value) {
+    _searchTimer?.cancel();
+
+    _searchTimer = Timer(
+      const Duration(milliseconds: 300),
+      () {
+        _loadEntries(keyword: value);
+      },
+    );
+  }
+
+  String _displayName(
+    BuildContext context,
+  ) {
+    final uiCode =
+        Localizations.localeOf(context)
+            .languageCode;
+
+    return widget.variant?.nameOf(uiCode) ??
+        widget.language.nameOf(uiCode);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          '${_displayName(context)} · 单词',
+        ),
+      ),
+      body: Column(
+        children: [
+          _buildSearchField(),
+          Expanded(
+            child: _buildContent(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchField() {
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: TextField(
+        onChanged: _onSearchChanged,
+        textInputAction:
+            TextInputAction.search,
+        decoration: const InputDecoration(
+          hintText: '搜索词条、释义或完整字段',
+          prefixIcon: Icon(Icons.search),
+          border: OutlineInputBorder(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding:
+              const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize:
+                MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.error_outline,
+                size: 42,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                '加载词条失败\n$_error',
+                textAlign:
+                    TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: _loadEntries,
+                child: const Text('重新加载'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_entries.isEmpty) {
+      return const Center(
+        child: Text('没有找到词条'),
+      );
+    }
+
+    return ListView.separated(
+      itemCount: _entries.length,
+      separatorBuilder: (_, _) =>
+          const Divider(height: 1),
+      itemBuilder: (context, index) {
+        return _buildEntryTile(
+          _entries[index],
+        );
+      },
+    );
+  }
+
+  Widget _buildEntryTile(
+    WordEntry entry,
+  ) {
+    final subtitleParts = <String>[
+      if (_isUseful(entry.sheetName))
+        entry.sheetName,
+      if (_isUseful(entry.type))
+        entry.type,
+      if (_isUseful(entry.meanings))
+        entry.meanings,
+    ];
+
+    return ListTile(
+      title: Text(
+        entry.word.isEmpty
+            ? '未命名词条'
+            : entry.word,
+        style: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      subtitle: subtitleParts.isEmpty
+          ? null
+          : Text(
+              subtitleParts.join(' · '),
+              maxLines: 2,
+              overflow:
+                  TextOverflow.ellipsis,
+            ),
+      trailing: const Icon(
+        Icons.chevron_right,
+      ),
+      onTap: () {
+        Navigator.push<void>(
+          context,
+          MaterialPageRoute(
+            builder: (_) {
+              return WordDetailScreen(
+                languageCode:
+                    widget.language.code,
+                entry: entry,
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  bool _isUseful(String value) {
+    final normalized =
+        value.trim().toLowerCase();
+
+    return normalized.isNotEmpty &&
+        normalized != '未知' &&
+        normalized != '未命名' &&
+        normalized != 'nan' &&
+        normalized != 'null';
+  }
+}

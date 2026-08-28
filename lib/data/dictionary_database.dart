@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
@@ -7,6 +6,7 @@ import 'package:sqflite/sqflite.dart';
 
 import '../models/word_entry.dart';
 import 'canonical_dictionary_repository.dart';
+import 'canonical_morphology_repository.dart';
 
 class DictionaryDatabase {
   static const int assetDatabaseVersion = 1;
@@ -104,6 +104,38 @@ class DictionaryDatabase {
       database: database,
       keyword: keyword,
       limit: limit,
+    );
+  }
+
+  Future<List<MorphologyAnalysis>>
+      getGeneratedForms({
+    required String languageCode,
+    required WordEntry entry,
+  }) async {
+    final lexemeId = entry.lexemeId;
+
+    if (!entry.isCanonical ||
+        lexemeId == null) {
+      return const [];
+    }
+
+    final normalizedLanguage =
+        _normalizeLanguageCode(languageCode);
+    final database =
+        await open(normalizedLanguage);
+
+    if (!await isCanonicalDatabase(database)) {
+      return const [];
+    }
+
+    final repository =
+        CanonicalMorphologyRepository(
+      database,
+    );
+
+    return repository.loadForms(
+      lexemeId: lexemeId,
+      partOfSpeech: entry.type,
     );
   }
 

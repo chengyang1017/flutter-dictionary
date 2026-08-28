@@ -1,5 +1,3 @@
-import 'dart:collection';
-
 import 'package:sqflite/sqflite.dart';
 
 import '../models/word_entry.dart';
@@ -21,7 +19,7 @@ class CanonicalDictionaryRepository {
         query.trim();
 
     final candidates =
-        LinkedHashMap<String, _Candidate>();
+        <String, _Candidate>{};
 
     if (normalizedQuery.isEmpty) {
       await _collectBrowseEntries(
@@ -95,7 +93,7 @@ class CanonicalDictionaryRepository {
   }
 
   Future<void> _collectBrowseEntries({
-    required LinkedHashMap<
+    required Map<
         String,
         _Candidate
     > candidates,
@@ -130,7 +128,7 @@ class CanonicalDictionaryRepository {
   }
 
   Future<void> _collectLemmaMatches({
-    required LinkedHashMap<
+    required Map<
         String,
         _Candidate
     > candidates,
@@ -182,7 +180,7 @@ class CanonicalDictionaryRepository {
   }
 
   Future<void> _collectGlossMatches({
-    required LinkedHashMap<
+    required Map<
         String,
         _Candidate
     > candidates,
@@ -244,7 +242,7 @@ class CanonicalDictionaryRepository {
   }
 
   Future<void> _collectFormMatches({
-    required LinkedHashMap<
+    required Map<
         String,
         _Candidate
     > candidates,
@@ -361,7 +359,7 @@ class CanonicalDictionaryRepository {
   }
 
   void _addMatch(
-    LinkedHashMap<String, _Candidate>
+    Map<String, _Candidate>
         candidates,
     _Candidate incoming,
     String matchType, {
@@ -389,7 +387,7 @@ class CanonicalDictionaryRepository {
     );
 
     final meanings =
-        LinkedHashSet<String>();
+        <String>{};
 
     for (final sense in senses) {
       meanings.addAll(sense.glosses);
@@ -469,7 +467,7 @@ class CanonicalDictionaryRepository {
     );
 
     final buckets =
-        LinkedHashMap<String, _SenseBucket>();
+        <String, _SenseBucket>{};
 
     for (final row in rows) {
       final senseId =

@@ -140,18 +140,20 @@ void main() {
             isNotNull,
           );
 
+          final entry = sampleEntry!;
+
           expect(
-            sampleEntry!.word.trim(),
+            entry.word.trim(),
             isNotEmpty,
           );
 
           expect(
-            sampleEntry!.isCanonical,
+            entry.isCanonical,
             isFalse,
           );
 
           expect(
-            sampleEntry!.sheetName.trim(),
+            entry.sheetName.trim(),
             isNotEmpty,
           );
         } finally {

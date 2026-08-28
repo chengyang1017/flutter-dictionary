@@ -5,12 +5,11 @@ import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
 import '../models/word_entry.dart';
+import 'asset_database_installer.dart';
 import 'canonical_dictionary_repository.dart';
 import 'canonical_morphology_repository.dart';
 
 class DictionaryDatabase {
-  static const int assetDatabaseVersion = 1;
-
   static const Set<String> _canonicalTables = {
     'lexemes',
     'senses',
@@ -43,22 +42,15 @@ class DictionaryDatabase {
 
     final databasePath = p.join(
       databaseDirectory,
-      'glyphora_${normalizedCode}_'
-      'v$assetDatabaseVersion.db',
+      'glyphora_$normalizedCode.db',
     );
 
     final databaseFile = File(databasePath);
 
-    if (!await databaseFile.exists()) {
-      await databaseFile.parent.create(
-        recursive: true,
-      );
-
-      await databaseFile.writeAsBytes(
-        bytes,
-        flush: true,
-      );
-    }
+    await AssetDatabaseInstaller.installIfChanged(
+      databaseFile: databaseFile,
+      assetBytes: bytes,
+    );
 
     final database = await openDatabase(
       databasePath,

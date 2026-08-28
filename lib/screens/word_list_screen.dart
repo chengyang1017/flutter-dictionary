@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:glyphora_language_core/glyphora_language_core.dart';
 
 import '../data/dictionary_database.dart';
+import '../localization/app_strings.dart';
 import '../models/word_entry.dart';
 import 'word_detail_screen.dart';
 
@@ -149,7 +150,8 @@ class _WordListScreenState
             .showSnackBar(
           SnackBar(
             content: Text(
-              '读取词形变化失败：$error',
+              '${AppStrings.of(context).failedToLoadForms}: '
+              '$error',
             ),
           ),
         );
@@ -189,10 +191,14 @@ class _WordListScreenState
 
   @override
   Widget build(BuildContext context) {
+    final strings =
+        AppStrings.of(context);
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          '${_displayName(context)} · 单词',
+          '${_displayName(context)} · '
+          '${strings.words}',
         ),
       ),
       body: Column(
@@ -213,10 +219,14 @@ class _WordListScreenState
         onChanged: _onSearchChanged,
         textInputAction:
             TextInputAction.search,
-        decoration: const InputDecoration(
-          hintText: '搜索原形、真实词形或释义',
-          prefixIcon: Icon(Icons.search),
-          border: OutlineInputBorder(),
+        decoration: InputDecoration(
+          hintText:
+              AppStrings.of(context)
+                  .searchHint,
+          prefixIcon:
+              const Icon(Icons.search),
+          border:
+              const OutlineInputBorder(),
         ),
       ),
     );
@@ -244,14 +254,18 @@ class _WordListScreenState
               ),
               const SizedBox(height: 12),
               Text(
-                '加载词条失败\n$_error',
+                '${AppStrings.of(context).failedToLoadEntries}'
+                '\n$_error',
                 textAlign:
                     TextAlign.center,
               ),
               const SizedBox(height: 16),
               FilledButton(
                 onPressed: _loadEntries,
-                child: const Text('重新加载'),
+                child: Text(
+                  AppStrings.of(context)
+                      .retry,
+                ),
               ),
             ],
           ),
@@ -260,8 +274,11 @@ class _WordListScreenState
     }
 
     if (_entries.isEmpty) {
-      return const Center(
-        child: Text('没有找到词条'),
+      return Center(
+        child: Text(
+          AppStrings.of(context)
+              .noEntries,
+        ),
       );
     }
 
@@ -322,7 +339,8 @@ class _WordListScreenState
     return ListTile(
       title: Text(
         entry.word.isEmpty
-            ? '未命名词条'
+            ? AppStrings.of(context)
+                .unnamedEntry
             : entry.word,
         style: const TextStyle(
           fontSize: 18,
@@ -349,9 +367,11 @@ class _WordListScreenState
   ) {
     switch (value) {
       case 'noun':
-        return '名词';
+        return AppStrings.of(context)
+            .noun;
       case 'verb':
-        return '动词';
+        return AppStrings.of(context)
+            .verb;
       default:
         return value;
     }
@@ -362,11 +382,14 @@ class _WordListScreenState
   ) {
     switch (value) {
       case 'lemma':
-        return '原形命中';
+        return AppStrings.of(context)
+            .lemmaMatch;
       case 'form':
-        return '词形命中';
+        return AppStrings.of(context)
+            .formMatch;
       case 'gloss':
-        return '释义命中';
+        return AppStrings.of(context)
+            .glossMatch;
       default:
         return null;
     }

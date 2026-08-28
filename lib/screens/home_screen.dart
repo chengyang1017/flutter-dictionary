@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:glyphora_language_core/glyphora_language_core.dart';
 
 import '../data/added_language_store.dart';
+import '../localization/app_locale.dart';
+import '../localization/app_strings.dart';
 import '../models/added_language.dart';
 import 'country_select.dart';
 import 'language_overview_screen.dart';
@@ -137,17 +139,84 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       actions: [
         IconButton(
-          tooltip: '添加语言',
-          onPressed: _openLanguageLibrary,
-          icon: const Icon(Icons.add_circle_outline_rounded),
+          tooltip:
+              AppStrings.of(context)
+                  .addLanguage,
+          onPressed:
+              _openLanguageLibrary,
+          icon: const Icon(
+            Icons.add_circle_outline_rounded,
+          ),
         ),
+        _buildLanguageMenu(),
         IconButton(
-          tooltip: '设置',
+          tooltip:
+              AppStrings.of(context)
+                  .settings,
           onPressed: () {},
-          icon: const Icon(Icons.settings_outlined),
+          icon: const Icon(
+            Icons.settings_outlined,
+          ),
         ),
         const SizedBox(width: 8),
       ],
+    );
+  }
+
+  Widget _buildLanguageMenu() {
+    final strings =
+        AppStrings.of(context);
+    final controller =
+        AppLocaleScope.of(context);
+    final selectedLanguageCode =
+        controller.languageCode;
+
+    return PopupMenuButton<String>(
+      tooltip: strings.interfaceLanguage,
+      icon: const Icon(
+        Icons.language_outlined,
+      ),
+      onSelected: (value) {
+        controller.setLanguageCode(
+          value == 'system'
+              ? null
+              : value,
+        );
+      },
+      itemBuilder: (context) {
+        return [
+          CheckedPopupMenuItem<String>(
+            value: 'system',
+            checked:
+                selectedLanguageCode ==
+                    null,
+            child: Text(
+              strings.followSystem,
+            ),
+          ),
+          ...AppLocaleController
+              .supportedLocales
+              .map(
+            (locale) {
+              final code =
+                  locale.languageCode;
+
+              return CheckedPopupMenuItem<
+                  String>(
+                value: code,
+                checked:
+                    selectedLanguageCode ==
+                        code,
+                child: Text(
+                  strings.languageName(
+                    code,
+                  ),
+                ),
+              );
+            },
+          ),
+        ];
+      },
     );
   }
 

@@ -11,12 +11,17 @@ class CanonicalDictionaryRepository {
 
   Future<List<WordEntry>> search({
     required String languageCode,
+    required String queryLanguage,
     String query = '',
     String glossLanguage = 'zh',
     int limit = 500,
   }) async {
     final normalizedQuery =
         query.trim();
+    final normalizedQueryLanguage =
+        _normalizeLanguageCode(
+      queryLanguage,
+    );
 
     final candidates =
         <String, _Candidate>{};
@@ -46,6 +51,8 @@ class CanonicalDictionaryRepository {
       await _collectGlossMatches(
         candidates: candidates,
         languageCode: languageCode,
+        queryLanguage:
+            normalizedQueryLanguage,
         query: normalizedQuery,
         limit: limit,
         exact: true,
@@ -63,6 +70,8 @@ class CanonicalDictionaryRepository {
         await _collectGlossMatches(
           candidates: candidates,
           languageCode: languageCode,
+          queryLanguage:
+              normalizedQueryLanguage,
           query: normalizedQuery,
           limit: limit,
           exact: false,
@@ -185,6 +194,7 @@ class CanonicalDictionaryRepository {
         _Candidate
     > candidates,
     required String languageCode,
+    required String queryLanguage,
     required String query,
     required int limit,
     required bool exact,
@@ -203,6 +213,7 @@ class CanonicalDictionaryRepository {
             JOIN lexemes
               ON lexemes.id = senses.lexeme_id
             WHERE lexemes.language_code = ?
+              AND glosses.language_code = ?
               AND glosses.text = ? COLLATE NOCASE
             ORDER BY lexemes.lemma COLLATE NOCASE,
                      lexemes.id
@@ -220,6 +231,7 @@ class CanonicalDictionaryRepository {
             JOIN lexemes
               ON lexemes.id = senses.lexeme_id
             WHERE lexemes.language_code = ?
+              AND glosses.language_code = ?
               AND glosses.text LIKE ? COLLATE NOCASE
             ORDER BY lexemes.lemma COLLATE NOCASE,
                      lexemes.id
@@ -227,6 +239,7 @@ class CanonicalDictionaryRepository {
             ''',
       [
         languageCode,
+        queryLanguage,
         exact ? query : '$query%',
         limit,
       ],

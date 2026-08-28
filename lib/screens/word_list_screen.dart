@@ -33,7 +33,7 @@ class _WordListScreenState
   bool _isLoading = true;
   String? _error;
   String _keyword = '';
-  String? _glossLanguage;
+  String? _uiLanguageCode;
 
   @override
   void didChangeDependencies() {
@@ -43,8 +43,8 @@ class _WordListScreenState
         Localizations.localeOf(context)
             .languageCode;
 
-    if (_glossLanguage != uiLanguage) {
-      _glossLanguage = uiLanguage;
+    if (_uiLanguageCode != uiLanguage) {
+      _uiLanguageCode = uiLanguage;
       _loadEntries();
     }
   }
@@ -85,9 +85,11 @@ class _WordListScreenState
           await _database.getWords(
         languageCode:
             widget.language.code,
+        queryLanguage:
+            _uiLanguageCode ?? 'zh',
         keyword: _keyword,
         glossLanguage:
-            _glossLanguage ?? 'zh',
+            _uiLanguageCode ?? 'zh',
       );
 
       if (!mounted) {

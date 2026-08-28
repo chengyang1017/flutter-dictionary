@@ -71,6 +71,7 @@ void main() {
     () async {
       final results = await dictionaryRepository.search(
         languageCode: 'ky',
+        queryLanguage: 'zh',
         query: 'алуу',
         glossLanguage: 'zh',
       );
@@ -99,6 +100,7 @@ void main() {
     () async {
       final results = await dictionaryRepository.search(
         languageCode: 'ky',
+        queryLanguage: 'zh',
         query: 'алдым',
         glossLanguage: 'zh',
       );
@@ -130,26 +132,68 @@ void main() {
   );
 
   test(
-    'gloss lookup works for English Chinese and Russian',
+    'gloss lookup uses the declared query language',
     () async {
-      for (final query in [
-        'buy',
-        '买',
-        'покупать',
-      ]) {
+      for (final testCase in const {
+        'en': 'buy',
+        'zh': '买',
+        'ru': 'покупать',
+      }.entries) {
         final results =
             await dictionaryRepository.search(
           languageCode: 'ky',
-          query: query,
+          queryLanguage: testCase.key,
+          query: testCase.value,
           glossLanguage: 'zh',
         );
 
         expect(
           results.map((entry) => entry.word),
           contains('алуу'),
-          reason: 'gloss query failed: $query',
+          reason:
+              'gloss query failed: '
+              '${testCase.key}:${testCase.value}',
         );
       }
+    },
+  );
+
+  test(
+    'gloss lookup does not cross query languages',
+    () async {
+      final results =
+          await dictionaryRepository.search(
+        languageCode: 'ky',
+        queryLanguage: 'zh',
+        query: 'buy',
+        glossLanguage: 'zh',
+      );
+
+      expect(
+        results.map((entry) => entry.word),
+        isNot(contains('алуу')),
+      );
+    },
+  );
+
+  test(
+    'query language and result gloss language are independent',
+    () async {
+      final results =
+          await dictionaryRepository.search(
+        languageCode: 'ky',
+        queryLanguage: 'zh',
+        query: '买',
+        glossLanguage: 'en',
+      );
+
+      final entry = results.singleWhere(
+        (item) => item.word == 'алуу',
+      );
+
+      expect(entry.primaryMatch, 'gloss');
+      expect(entry.senses[0].glosses, ['buy']);
+      expect(entry.meanings, 'buy / take');
     },
   );
 
@@ -158,6 +202,7 @@ void main() {
     () async {
       final results = await dictionaryRepository.search(
         languageCode: 'ky',
+        queryLanguage: 'zh',
         query: 'орток',
         glossLanguage: 'zh',
       );
@@ -188,6 +233,7 @@ void main() {
     () async {
       final results = await dictionaryRepository.search(
         languageCode: 'ky',
+        queryLanguage: 'zh',
         query: 'алуу',
         glossLanguage: 'en',
       );
@@ -244,6 +290,7 @@ void main() {
       final lemmaResults =
           await dictionaryRepository.search(
         languageCode: 'ky',
+        queryLanguage: 'zh',
         query: 'мугалим',
         glossLanguage: 'zh',
       );

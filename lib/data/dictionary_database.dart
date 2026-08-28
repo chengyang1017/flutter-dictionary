@@ -1,14 +1,22 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
 import '../models/word_entry.dart';
+import 'asset_database_installer.dart';
+import 'canonical_dictionary_repository.dart';
+import 'canonical_morphology_repository.dart';
 
 class DictionaryDatabase {
-  static const int assetDatabaseVersion = 1;
+  static const Set<String> _canonicalTables = {
+    'lexemes',
+    'senses',
+    'glosses',
+    'noun_forms',
+    'verb_forms',
+  };
 
   final Map<String, Database> _openedDatabases = {};
 
@@ -16,7 +24,7 @@ class DictionaryDatabase {
     String languageCode,
   ) async {
     final normalizedCode =
-        languageCode.trim().toLowerCase();
+        _normalizeLanguageCode(languageCode);
 
     final cached =
         _openedDatabases[normalizedCode];
@@ -34,22 +42,15 @@ class DictionaryDatabase {
 
     final databasePath = p.join(
       databaseDirectory,
-      'glyphora_${normalizedCode}_'
-      'v$assetDatabaseVersion.db',
+      'glyphora_$normalizedCode.db',
     );
 
     final databaseFile = File(databasePath);
 
-    if (!await databaseFile.exists()) {
-      await databaseFile.parent.create(
-        recursive: true,
-      );
-
-      await databaseFile.writeAsBytes(
-        bytes,
-        flush: true,
-      );
-    }
+    await AssetDatabaseInstaller.installIfChanged(
+      databaseFile: databaseFile,
+      assetBytes: bytes,
+    );
 
     final database = await openDatabase(
       databasePath,
@@ -65,17 +66,104 @@ class DictionaryDatabase {
   Future<List<WordEntry>> getWords({
     required String languageCode,
     String keyword = '',
+    String glossLanguage = 'zh',
     int limit = 500,
   }) async {
-    final database =
-        await open(languageCode);
+    final normalizedLanguage =
+        _normalizeLanguageCode(languageCode);
 
+    final database =
+        await open(normalizedLanguage);
+
+    if (await isCanonicalDatabase(database)) {
+      final repository =
+          CanonicalDictionaryRepository(
+        database,
+      );
+
+      return repository.search(
+        languageCode: normalizedLanguage,
+        query: keyword,
+        glossLanguage:
+            _normalizeLanguageCode(
+          glossLanguage,
+        ),
+        limit: limit,
+      );
+    }
+
+    return _getLegacyWords(
+      database: database,
+      keyword: keyword,
+      limit: limit,
+    );
+  }
+
+  Future<List<MorphologyAnalysis>>
+      getGeneratedForms({
+    required String languageCode,
+    required WordEntry entry,
+  }) async {
+    final lexemeId = entry.lexemeId;
+
+    if (!entry.isCanonical ||
+        lexemeId == null) {
+      return const [];
+    }
+
+    final normalizedLanguage =
+        _normalizeLanguageCode(languageCode);
+    final database =
+        await open(normalizedLanguage);
+
+    if (!await isCanonicalDatabase(database)) {
+      return const [];
+    }
+
+    final repository =
+        CanonicalMorphologyRepository(
+      database,
+    );
+
+    return repository.loadForms(
+      lexemeId: lexemeId,
+      partOfSpeech: entry.type,
+    );
+  }
+
+  Future<bool> isCanonicalDatabase(
+    Database database,
+  ) async {
+    final rows = await database.rawQuery(
+      '''
+      SELECT name
+      FROM sqlite_master
+      WHERE type = 'table'
+      ''',
+    );
+
+    final tableNames = rows
+        .map((row) => row['name']?.toString())
+        .whereType<String>()
+        .toSet();
+
+    return _canonicalTables.every(
+      tableNames.contains,
+    );
+  }
+
+  Future<List<WordEntry>> _getLegacyWords({
+    required Database database,
+    required String keyword,
+    required int limit,
+  }) async {
     final tables =
         await getDictionaryTables(database);
 
     if (tables.isEmpty) {
       throw StateError(
-        '数据库中没有以 _table 结尾的词典表。',
+        '数据库既不是 canonical 词典，'
+        '也没有以 _table 结尾的旧词典表。',
       );
     }
 
@@ -260,5 +348,20 @@ class DictionaryDatabase {
         await database.close();
       }
     }
+  }
+
+  static String _normalizeLanguageCode(
+    String value,
+  ) {
+    final normalized =
+        value.trim().toLowerCase();
+
+    if (normalized.isEmpty) {
+      return '';
+    }
+
+    return normalized
+        .split(RegExp('[-_]'))
+        .first;
   }
 }

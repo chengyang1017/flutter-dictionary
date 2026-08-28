@@ -32,11 +32,21 @@ class _WordListScreenState
   List<WordEntry> _entries = const [];
   bool _isLoading = true;
   String? _error;
+  String _keyword = '';
+  String? _glossLanguage;
 
   @override
-  void initState() {
-    super.initState();
-    _loadEntries();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    final uiLanguage =
+        Localizations.localeOf(context)
+            .languageCode;
+
+    if (_glossLanguage != uiLanguage) {
+      _glossLanguage = uiLanguage;
+      _loadEntries();
+    }
   }
 
   @override
@@ -59,8 +69,12 @@ class _WordListScreenState
   }
 
   Future<void> _loadEntries({
-    String keyword = '',
+    String? keyword,
   }) async {
+    if (keyword != null) {
+      _keyword = keyword;
+    }
+
     setState(() {
       _isLoading = true;
       _error = null;
@@ -71,7 +85,9 @@ class _WordListScreenState
           await _database.getWords(
         languageCode:
             widget.language.code,
-        keyword: keyword,
+        keyword: _keyword,
+        glossLanguage:
+            _glossLanguage ?? 'zh',
       );
 
       if (!mounted) {
@@ -95,13 +111,66 @@ class _WordListScreenState
   }
 
   void _onSearchChanged(String value) {
+    _keyword = value;
     _searchTimer?.cancel();
 
     _searchTimer = Timer(
       const Duration(milliseconds: 300),
       () {
-        _loadEntries(keyword: value);
+        _loadEntries();
       },
+    );
+  }
+
+  Future<void> _openEntry(
+    WordEntry entry,
+  ) async {
+    var detailEntry = entry;
+
+    if (entry.isCanonical) {
+      try {
+        final forms =
+            await _database.getGeneratedForms(
+          languageCode:
+              widget.language.code,
+          entry: entry,
+        );
+
+        detailEntry =
+            entry.withAllForms(forms);
+      } catch (error) {
+        if (!mounted) {
+          return;
+        }
+
+        ScaffoldMessenger.of(context)
+            .showSnackBar(
+          SnackBar(
+            content: Text(
+              '读取词形变化失败：$error',
+            ),
+          ),
+        );
+
+        return;
+      }
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute(
+        builder: (_) {
+          return WordDetailScreen(
+            languageCode:
+                widget.language.code,
+            entry: detailEntry,
+          );
+        },
+      ),
     );
   }
 
@@ -143,7 +212,7 @@ class _WordListScreenState
         textInputAction:
             TextInputAction.search,
         decoration: const InputDecoration(
-          hintText: '搜索词条、释义或完整字段',
+          hintText: '搜索原形、真实词形或释义',
           prefixIcon: Icon(Icons.search),
           border: OutlineInputBorder(),
         ),
@@ -209,14 +278,44 @@ class _WordListScreenState
   Widget _buildEntryTile(
     WordEntry entry,
   ) {
-    final subtitleParts = <String>[
-      if (_isUseful(entry.sheetName))
-        entry.sheetName,
-      if (_isUseful(entry.type))
-        entry.type,
-      if (_isUseful(entry.meanings))
-        entry.meanings,
-    ];
+    final subtitleParts = <String>[];
+
+    if (entry.isCanonical) {
+      if (_isUseful(entry.type)) {
+        subtitleParts.add(
+          _partOfSpeechLabel(entry.type),
+        );
+      }
+
+      if (_isUseful(entry.meanings)) {
+        subtitleParts.add(
+          entry.meanings,
+        );
+      }
+
+      final matchLabel =
+          _matchLabel(entry.primaryMatch);
+
+      if (matchLabel != null) {
+        subtitleParts.add(matchLabel);
+      }
+    } else {
+      if (_isUseful(entry.sheetName)) {
+        subtitleParts.add(
+          entry.sheetName,
+        );
+      }
+
+      if (_isUseful(entry.type)) {
+        subtitleParts.add(entry.type);
+      }
+
+      if (_isUseful(entry.meanings)) {
+        subtitleParts.add(
+          entry.meanings,
+        );
+      }
+    }
 
     return ListTile(
       title: Text(
@@ -239,21 +338,36 @@ class _WordListScreenState
       trailing: const Icon(
         Icons.chevron_right,
       ),
-      onTap: () {
-        Navigator.push<void>(
-          context,
-          MaterialPageRoute(
-            builder: (_) {
-              return WordDetailScreen(
-                languageCode:
-                    widget.language.code,
-                entry: entry,
-              );
-            },
-          ),
-        );
-      },
+      onTap: () => _openEntry(entry),
     );
+  }
+
+  String _partOfSpeechLabel(
+    String value,
+  ) {
+    switch (value) {
+      case 'noun':
+        return '名词';
+      case 'verb':
+        return '动词';
+      default:
+        return value;
+    }
+  }
+
+  String? _matchLabel(
+    String? value,
+  ) {
+    switch (value) {
+      case 'lemma':
+        return '原形命中';
+      case 'form':
+        return '词形命中';
+      case 'gloss':
+        return '释义命中';
+      default:
+        return null;
+    }
   }
 
   bool _isUseful(String value) {

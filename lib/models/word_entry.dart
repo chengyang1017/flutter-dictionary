@@ -1,5 +1,29 @@
 import 'dart:convert';
 
+class DictionarySense {
+  final int number;
+  final List<String> glosses;
+
+  const DictionarySense({
+    required this.number,
+    required this.glosses,
+  });
+}
+
+class MorphologyAnalysis {
+  final String form;
+  final String canonicalKey;
+  final String partOfSpeech;
+  final Map<String, dynamic> features;
+
+  const MorphologyAnalysis({
+    required this.form,
+    required this.canonicalKey,
+    required this.partOfSpeech,
+    required this.features,
+  });
+}
+
 class WordEntry {
   final String word;
   final String meanings;
@@ -7,15 +31,38 @@ class WordEntry {
   final String tableName;
   final Map<String, dynamic> details;
 
+  final String? lexemeId;
+  final String? languageCode;
+  final String? primaryMatch;
+  final List<String> matchTypes;
+  final List<DictionarySense> senses;
+  final List<MorphologyAnalysis> matchedForms;
+  final List<MorphologyAnalysis> allForms;
+  final int formCount;
+
   const WordEntry({
     required this.word,
     required this.meanings,
     required this.type,
     required this.tableName,
     required this.details,
+    this.lexemeId,
+    this.languageCode,
+    this.primaryMatch,
+    this.matchTypes = const [],
+    this.senses = const [],
+    this.matchedForms = const [],
+    this.allForms = const [],
+    this.formCount = 0,
   });
 
+  bool get isCanonical => lexemeId != null;
+
   String get sheetName {
+    if (isCanonical) {
+      return type;
+    }
+
     var value = tableName;
 
     if (value.endsWith('_table')) {
@@ -45,6 +92,54 @@ class WordEntry {
       type: _text(map['type']),
       tableName: tableName,
       details: _decodeDetails(map['data']),
+    );
+  }
+
+  factory WordEntry.canonical({
+    required String lexemeId,
+    required String languageCode,
+    required String lemma,
+    required String partOfSpeech,
+    required String meanings,
+    required List<DictionarySense> senses,
+    required List<MorphologyAnalysis> matchedForms,
+    required int formCount,
+    String? primaryMatch,
+    List<String> matchTypes = const [],
+  }) {
+    return WordEntry(
+      word: lemma,
+      meanings: meanings,
+      type: partOfSpeech,
+      tableName: 'canonical_${partOfSpeech}_table',
+      details: const {},
+      lexemeId: lexemeId,
+      languageCode: languageCode,
+      primaryMatch: primaryMatch,
+      matchTypes: List.unmodifiable(matchTypes),
+      senses: List.unmodifiable(senses),
+      matchedForms: List.unmodifiable(matchedForms),
+      formCount: formCount,
+    );
+  }
+
+  WordEntry withAllForms(
+    List<MorphologyAnalysis> forms,
+  ) {
+    return WordEntry(
+      word: word,
+      meanings: meanings,
+      type: type,
+      tableName: tableName,
+      details: details,
+      lexemeId: lexemeId,
+      languageCode: languageCode,
+      primaryMatch: primaryMatch,
+      matchTypes: matchTypes,
+      senses: senses,
+      matchedForms: matchedForms,
+      allForms: List.unmodifiable(forms),
+      formCount: formCount,
     );
   }
 

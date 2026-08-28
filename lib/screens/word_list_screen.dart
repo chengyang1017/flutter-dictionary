@@ -122,6 +122,58 @@ class _WordListScreenState
     );
   }
 
+  Future<void> _openEntry(
+    WordEntry entry,
+  ) async {
+    var detailEntry = entry;
+
+    if (entry.isCanonical) {
+      try {
+        final forms =
+            await _database.getGeneratedForms(
+          languageCode:
+              widget.language.code,
+          entry: entry,
+        );
+
+        detailEntry =
+            entry.withMorphologyForms(forms);
+      } catch (error) {
+        if (!mounted) {
+          return;
+        }
+
+        ScaffoldMessenger.of(context)
+            .showSnackBar(
+          SnackBar(
+            content: Text(
+              '读取词形变化失败：$error',
+            ),
+          ),
+        );
+
+        return;
+      }
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    await Navigator.push<void>(
+      context,
+      MaterialPageRoute(
+        builder: (_) {
+          return WordDetailScreen(
+            languageCode:
+                widget.language.code,
+            entry: detailEntry,
+          );
+        },
+      ),
+    );
+  }
+
   String _displayName(
     BuildContext context,
   ) {
@@ -286,20 +338,7 @@ class _WordListScreenState
       trailing: const Icon(
         Icons.chevron_right,
       ),
-      onTap: () {
-        Navigator.push<void>(
-          context,
-          MaterialPageRoute(
-            builder: (_) {
-              return WordDetailScreen(
-                languageCode:
-                    widget.language.code,
-                entry: entry,
-              );
-            },
-          ),
-        );
-      },
+      onTap: () => _openEntry(entry),
     );
   }
 

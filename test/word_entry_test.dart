@@ -120,5 +120,55 @@ void main() {
         isNull,
       );
     });
+
+    test('detail copy can hold the complete morphology paradigm', () {
+      const entry = WordEntry(
+        word: 'айтуу',
+        meanings: '说 / 告诉',
+        type: 'verb',
+        tableName: 'canonical_verb_table',
+        details: {},
+        lexemeId: 'verb:айтуу',
+        languageCode: 'ky',
+        senses: [],
+        matchedForms: [],
+        formCount: 46,
+      );
+
+      final detailEntry = entry.withMorphologyForms(
+        const [
+          MorphologyAnalysis(
+            form: 'айтуу',
+            canonicalKey: 'infinitive',
+            partOfSpeech: 'verb',
+            features: {
+              'form_type': 'infinitive',
+              'tense': null,
+              'person': null,
+              'negative': false,
+            },
+          ),
+          MorphologyAnalysis(
+            form: 'айттым',
+            canonicalKey: 'past_men',
+            partOfSpeech: 'verb',
+            features: {
+              'form_type': 'finite',
+              'tense': 'past',
+              'person': '1sg',
+              'negative': false,
+            },
+          ),
+        ],
+      );
+
+      expect(detailEntry.matchedForms, hasLength(2));
+      expect(
+        detailEntry.matchedForms.last.canonicalKey,
+        'past_men',
+      );
+      expect(detailEntry.formCount, 46);
+      expect(detailEntry.lexemeId, entry.lexemeId);
+    });
   });
 }

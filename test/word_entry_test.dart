@@ -135,7 +135,7 @@ void main() {
         formCount: 46,
       );
 
-      final detailEntry = entry.withMorphologyForms(
+      final detailEntry = entry.withAllForms(
         const [
           MorphologyAnalysis(
             form: 'айтуу',
@@ -162,9 +162,9 @@ void main() {
         ],
       );
 
-      expect(detailEntry.matchedForms, hasLength(2));
+      expect(detailEntry.allForms, hasLength(2));
       expect(
-        detailEntry.matchedForms.last.canonicalKey,
+        detailEntry.allForms.last.canonicalKey,
         'past_men',
       );
       expect(detailEntry.formCount, 46);

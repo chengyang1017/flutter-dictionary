@@ -82,7 +82,13 @@ class WordDetailScreen
         if (entry.matchedForms
             .isNotEmpty) ...[
           const SizedBox(height: 16),
-          _buildMorphologyAnalyses(
+          _buildMatchedForms(
+            context,
+          ),
+        ],
+        if (entry.allForms.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          _buildFullParadigm(
             context,
           ),
         ],
@@ -137,22 +143,336 @@ class WordDetailScreen
     );
   }
 
-  Widget _buildMorphologyAnalyses(
+  Widget _buildMatchedForms(
     BuildContext context,
   ) {
+    final searchedForms = entry.matchedForms
+        .map((analysis) => analysis.form)
+        .where((form) => form.trim().isNotEmpty)
+        .toSet()
+        .join(' / ');
+
     return _buildCard(
       context,
-      title: '词形分析',
-      children: entry.matchedForms
+      title: '搜索命中',
+      children: [
+        if (searchedForms.isNotEmpty) ...[
+          Text(
+            '你搜索：$searchedForms',
+            style: Theme.of(context)
+                .textTheme
+                .bodyLarge,
+          ),
+          const SizedBox(height: 6),
+        ],
+        Text(
+          '原形：${entry.word}',
+          style: Theme.of(context)
+              .textTheme
+              .bodyLarge,
+        ),
+        const SizedBox(height: 12),
+        const Divider(height: 1),
+        const SizedBox(height: 12),
+        ...entry.matchedForms.map(
+          (analysis) => _buildAnalysis(
+            context,
+            analysis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFullParadigm(
+    BuildContext context,
+  ) {
+    final groups = _groupAllForms(
+      entry.allForms,
+    );
+
+    final groupNames = _orderedGroupNames(
+      entry.type,
+      groups.keys,
+    );
+
+    return _buildCard(
+      context,
+      title:
+          '完整词形变化 · ${entry.allForms.length}',
+      children: groupNames
           .map(
-            (analysis) =>
-                _buildAnalysis(
-              context,
-              analysis,
+            (groupName) => ExpansionTile(
+              tilePadding: EdgeInsets.zero,
+              childrenPadding:
+                  const EdgeInsets.only(
+                bottom: 8,
+              ),
+              title: Text(groupName),
+              subtitle: Text(
+                '${groups[groupName]!.length} 个词形',
+              ),
+              children: groups[groupName]!
+                  .map(
+                    (analysis) =>
+                        _buildParadigmRow(
+                      context,
+                      analysis,
+                    ),
+                  )
+                  .toList(growable: false),
             ),
           )
           .toList(growable: false),
     );
+  }
+
+  Map<String, List<MorphologyAnalysis>>
+      _groupAllForms(
+    List<MorphologyAnalysis> forms,
+  ) {
+    final groups =
+        <String, List<MorphologyAnalysis>>{};
+
+    for (final analysis in forms) {
+      final group =
+          _paradigmGroupName(analysis);
+
+      groups
+          .putIfAbsent(
+            group,
+            () => <MorphologyAnalysis>[],
+          )
+          .add(analysis);
+    }
+
+    return groups;
+  }
+
+  List<String> _orderedGroupNames(
+    String partOfSpeech,
+    Iterable<String> existingGroups,
+  ) {
+    final existing =
+        existingGroups.toSet();
+
+    final preferred =
+        partOfSpeech == 'noun'
+            ? const [
+                '单数',
+                '复数',
+                '所属',
+                '格',
+                '疑问',
+                '特殊形',
+              ]
+            : const [
+                '不定式',
+                '过去时',
+                '现在时',
+                '将来时',
+                '人称',
+                '否定',
+              ];
+
+    return [
+      ...preferred.where(existing.contains),
+      ...existing.where(
+        (name) => !preferred.contains(name),
+      ),
+    ];
+  }
+
+  String _paradigmGroupName(
+    MorphologyAnalysis analysis,
+  ) {
+    if (analysis.partOfSpeech == 'noun') {
+      if (_featureBool(
+        analysis.features['special'],
+      )) {
+        return '特殊形';
+      }
+
+      if (_featureBool(
+        analysis.features['interrogative'],
+      )) {
+        return '疑问';
+      }
+
+      final possessive = _featureText(
+        analysis.features['possessive'],
+      );
+
+      if (possessive.isNotEmpty &&
+          possessive != 'none') {
+        return '所属';
+      }
+
+      final caseName = _featureText(
+        analysis.features['case'],
+      );
+
+      if (caseName.isNotEmpty &&
+          caseName != 'nominative') {
+        return '格';
+      }
+
+      if (_featureText(
+            analysis.features['number'],
+          ) ==
+          'pl') {
+        return '复数';
+      }
+
+      return '单数';
+    }
+
+    if (analysis.partOfSpeech == 'verb') {
+      if (_featureText(
+            analysis.features['form_type'],
+          ) ==
+          'infinitive') {
+        return '不定式';
+      }
+
+      if (_featureBool(
+        analysis.features['negative'],
+      )) {
+        return '否定';
+      }
+
+      switch (_featureText(
+        analysis.features['tense'],
+      )) {
+        case 'past':
+          return '过去时';
+        case 'present':
+          return '现在时';
+        case 'future':
+          return '将来时';
+      }
+
+      if (_featureText(
+        analysis.features['person'],
+      ).isNotEmpty) {
+        return '人称';
+      }
+    }
+
+    return '其他';
+  }
+
+  Widget _buildParadigmRow(
+    BuildContext context,
+    MorphologyAnalysis analysis,
+  ) {
+    final summary =
+        _analysisSummary(analysis);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        vertical: 8,
+      ),
+      child: Column(
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
+        children: [
+          SelectableText(
+            analysis.form,
+            style: Theme.of(context)
+                .textTheme
+                .titleSmall,
+          ),
+          if (summary.isNotEmpty) ...[
+            const SizedBox(height: 3),
+            Text(summary),
+          ],
+          const SizedBox(height: 3),
+          Text(
+            analysis.canonicalKey,
+            style: Theme.of(context)
+                .textTheme
+                .bodySmall,
+          ),
+          const Divider(height: 16),
+        ],
+      ),
+    );
+  }
+
+  String _analysisSummary(
+    MorphologyAnalysis analysis,
+  ) {
+    final keys =
+        analysis.partOfSpeech == 'noun'
+            ? const [
+                'number',
+                'possessive',
+                'case',
+                'interrogative',
+                'special',
+              ]
+            : const [
+                'form_type',
+                'tense',
+                'person',
+                'negative',
+              ];
+
+    final parts = <String>[];
+
+    for (final key in keys) {
+      final value =
+          analysis.features[key];
+
+      if (value is bool) {
+        if (value) {
+          parts.add(
+            _featureLabel(key),
+          );
+        }
+        continue;
+      }
+
+      if (!_hasValue(value)) {
+        continue;
+      }
+
+      parts.add(
+        _featureValue(
+          key,
+          value,
+        ),
+      );
+    }
+
+    return parts.join(' · ');
+  }
+
+  bool _featureBool(dynamic value) {
+    if (value is bool) {
+      return value;
+    }
+
+    if (value is num) {
+      return value != 0;
+    }
+
+    final normalized = value
+        ?.toString()
+        .trim()
+        .toLowerCase();
+
+    return normalized == '1' ||
+        normalized == 'true';
+  }
+
+  String _featureText(dynamic value) {
+    return value
+            ?.toString()
+            .trim()
+            .toLowerCase() ??
+        '';
   }
 
   Widget _buildAnalysis(

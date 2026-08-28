@@ -37,6 +37,7 @@ class WordEntry {
   final List<String> matchTypes;
   final List<DictionarySense> senses;
   final List<MorphologyAnalysis> matchedForms;
+  final List<MorphologyAnalysis> allForms;
   final int formCount;
 
   const WordEntry({
@@ -51,6 +52,7 @@ class WordEntry {
     this.matchTypes = const [],
     this.senses = const [],
     this.matchedForms = const [],
+    this.allForms = const [],
     this.formCount = 0,
   });
 
@@ -121,7 +123,7 @@ class WordEntry {
     );
   }
 
-  WordEntry withMorphologyForms(
+  WordEntry withAllForms(
     List<MorphologyAnalysis> forms,
   ) {
     return WordEntry(
@@ -135,7 +137,8 @@ class WordEntry {
       primaryMatch: primaryMatch,
       matchTypes: matchTypes,
       senses: senses,
-      matchedForms: List.unmodifiable(forms),
+      matchedForms: matchedForms,
+      allForms: List.unmodifiable(forms),
       formCount: formCount,
     );
   }

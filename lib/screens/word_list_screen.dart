@@ -137,7 +137,7 @@ class _WordListScreenState
         );
 
         detailEntry =
-            entry.withMorphologyForms(forms);
+            entry.withAllForms(forms);
       } catch (error) {
         if (!mounted) {
           return;

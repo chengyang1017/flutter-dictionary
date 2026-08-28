@@ -121,6 +121,25 @@ class WordEntry {
     );
   }
 
+  WordEntry withMorphologyForms(
+    List<MorphologyAnalysis> forms,
+  ) {
+    return WordEntry(
+      word: word,
+      meanings: meanings,
+      type: type,
+      tableName: tableName,
+      details: details,
+      lexemeId: lexemeId,
+      languageCode: languageCode,
+      primaryMatch: primaryMatch,
+      matchTypes: matchTypes,
+      senses: senses,
+      matchedForms: List.unmodifiable(forms),
+      formCount: formCount,
+    );
+  }
+
   static Map<String, dynamic> _decodeDetails(
     Object? value,
   ) {

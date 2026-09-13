@@ -4,6 +4,7 @@ import 'package:glyphora_language_core/glyphora_language_core.dart';
 import '../data/added_language_store.dart';
 import '../localization/app_locale.dart';
 import '../localization/app_strings.dart';
+import '../localization/ui_strings.dart';
 import '../models/added_language.dart';
 import 'country_select.dart';
 import 'language_overview_screen.dart';
@@ -38,14 +39,12 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final items = await _store.load();
       if (!mounted) return;
-
       setState(() {
         _items = items;
         _isLoading = false;
       });
     } catch (error) {
       if (!mounted) return;
-
       setState(() {
         _error = error.toString();
         _isLoading = false;
@@ -71,16 +70,21 @@ class _HomeScreenState extends State<HomeScreen> {
     await _loadItems();
   }
 
-  String get _uiLanguageCode => Localizations.localeOf(context).languageCode;
+  String get _uiLanguageCode =>
+      Localizations.localeOf(context).languageCode;
 
-  int get _countryCount =>
-      _items.map((item) => item.countryCode.toUpperCase()).toSet().length;
+  int get _countryCount => _items
+      .map((item) => item.countryCode.toUpperCase())
+      .toSet()
+      .length;
 
   int get _variantCount =>
       _items.where((item) => item.variantCode != null).length;
 
   @override
   Widget build(BuildContext context) {
+    final strings = UiStrings.of(context);
+
     return Scaffold(
       body: SafeArea(
         child: RefreshIndicator(
@@ -101,7 +105,9 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               _buildSectionHeader(),
               _buildContent(),
-              const SliverToBoxAdapter(child: SizedBox(height: 96)),
+              const SliverToBoxAdapter(
+                child: SizedBox(height: 96),
+              ),
             ],
           ),
         ),
@@ -111,9 +117,12 @@ class _HomeScreenState extends State<HomeScreen> {
         elevation: 3,
         highlightElevation: 6,
         icon: const Icon(Icons.add_rounded),
-        label: const Text(
-          '添加语言',
-          style: TextStyle(fontWeight: FontWeight.w600, letterSpacing: 0.3),
+        label: Text(
+          AppStrings.of(context).addLanguage,
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.3,
+          ),
         ),
       ),
     );
@@ -126,9 +135,9 @@ class _HomeScreenState extends State<HomeScreen> {
       elevation: 0,
       scrolledUnderElevation: 0,
       backgroundColor: Theme.of(context).colorScheme.surface,
-      title: Padding(
-        padding: const EdgeInsets.only(left: 20, right: 8),
-        child: const Text(
+      title: const Padding(
+        padding: EdgeInsets.only(left: 20, right: 8),
+        child: Text(
           'Glyphora',
           style: TextStyle(
             fontSize: 24,
@@ -139,24 +148,17 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       actions: [
         IconButton(
-          tooltip:
-              AppStrings.of(context)
-                  .addLanguage,
-          onPressed:
-              _openLanguageLibrary,
+          tooltip: AppStrings.of(context).addLanguage,
+          onPressed: _openLanguageLibrary,
           icon: const Icon(
             Icons.add_circle_outline_rounded,
           ),
         ),
         _buildLanguageMenu(),
         IconButton(
-          tooltip:
-              AppStrings.of(context)
-                  .settings,
+          tooltip: AppStrings.of(context).settings,
           onPressed: () {},
-          icon: const Icon(
-            Icons.settings_outlined,
-          ),
+          icon: const Icon(Icons.settings_outlined),
         ),
         const SizedBox(width: 8),
       ],
@@ -164,54 +166,32 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildLanguageMenu() {
-    final strings =
-        AppStrings.of(context);
-    final controller =
-        AppLocaleScope.of(context);
-    final selectedLanguageCode =
-        controller.languageCode;
+    final strings = AppStrings.of(context);
+    final controller = AppLocaleScope.of(context);
+    final selectedLanguageCode = controller.languageCode;
 
     return PopupMenuButton<String>(
       tooltip: strings.interfaceLanguage,
-      icon: const Icon(
-        Icons.language_outlined,
-      ),
+      icon: const Icon(Icons.language_outlined),
       onSelected: (value) {
         controller.setLanguageCode(
-          value == 'system'
-              ? null
-              : value,
+          value == 'system' ? null : value,
         );
       },
       itemBuilder: (context) {
         return [
           CheckedPopupMenuItem<String>(
             value: 'system',
-            checked:
-                selectedLanguageCode ==
-                    null,
-            child: Text(
-              strings.followSystem,
-            ),
+            checked: selectedLanguageCode == null,
+            child: Text(strings.followSystem),
           ),
-          ...AppLocaleController
-              .supportedLocales
-              .map(
+          ...AppLocaleController.supportedLocales.map(
             (locale) {
-              final code =
-                  locale.languageCode;
-
-              return CheckedPopupMenuItem<
-                  String>(
+              final code = locale.languageCode;
+              return CheckedPopupMenuItem<String>(
                 value: code,
-                checked:
-                    selectedLanguageCode ==
-                        code,
-                child: Text(
-                  strings.languageName(
-                    code,
-                  ),
-                ),
+                checked: selectedLanguageCode == code,
+                child: Text(strings.languageName(code)),
               );
             },
           ),
@@ -221,15 +201,17 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildSectionHeader() {
+    final strings = UiStrings.of(context);
+
     return SliverPadding(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
       sliver: SliverToBoxAdapter(
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              '我的语言',
-              style: TextStyle(
+            Text(
+              strings.myLanguages,
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
                 letterSpacing: -0.2,
@@ -237,13 +219,18 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             if (_items.isNotEmpty)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHigh,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .surfaceContainerHigh,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  '${_items.length} 项',
+                  strings.itemCount(_items.length),
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -258,101 +245,84 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildContent() {
-  if (_isLoading) {
+    if (_isLoading) {
+      return SliverPadding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        sliver: SliverList.separated(
+          itemCount: 3,
+          separatorBuilder: (_, _) =>
+              const SizedBox(height: 12),
+          itemBuilder: (_, _) =>
+              const _LanguageCardSkeleton(),
+        ),
+      );
+    }
+
+    if (_error != null) {
+      return SliverToBoxAdapter(
+        child: _buildErrorView(),
+      );
+    }
+
+    if (_items.isEmpty) {
+      return SliverToBoxAdapter(
+        child: _EmptyLanguageView(
+          onAddPressed: _openLanguageLibrary,
+        ),
+      );
+    }
+
     return SliverPadding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       sliver: SliverList.separated(
-        itemCount: 3,
-        separatorBuilder: (_, _) {
-          return const SizedBox(
-            height: 12,
+        itemCount: _items.length,
+        separatorBuilder: (_, _) =>
+            const SizedBox(height: 12),
+        itemBuilder: (context, index) {
+          final item = _items[index];
+          return _LanguageCard(
+            key: ValueKey(
+              '${item.countryCode}_${item.languageCode}_${item.variantCode}',
+            ),
+            item: item,
+            uiLanguageCode: _uiLanguageCode,
+            onTap: _openOverview,
+            onRemove: (displayName) {
+              _confirmRemove(item, displayName);
+            },
           );
         },
-        itemBuilder: (_, _) {
-          return const _LanguageCardSkeleton();
-        },
       ),
     );
   }
-
-  if (_error != null) {
-    return SliverToBoxAdapter(
-      child: _buildErrorView(),
-    );
-  }
-
-  if (_items.isEmpty) {
-    return SliverToBoxAdapter(
-      child: _EmptyLanguageView(
-        onAddPressed: _openLanguageLibrary,
-      ),
-    );
-  }
-
-  return SliverPadding(
-    padding: const EdgeInsets.symmetric(
-      horizontal: 16,
-    ),
-    sliver: SliverList.separated(
-      itemCount: _items.length,
-      separatorBuilder: (_, _) {
-        return const SizedBox(
-          height: 12,
-        );
-      },
-      itemBuilder: (context, index) {
-        final item = _items[index];
-
-        return _LanguageCard(
-          key: ValueKey(
-            '${item.countryCode}_'
-            '${item.languageCode}_'
-            '${item.variantCode}',
-          ),
-          item: item,
-          uiLanguageCode: _uiLanguageCode,
-          onTap: (
-            country,
-            language,
-            variant,
-          ) {
-            _openOverview(
-              country,
-              language,
-              variant,
-            );
-          },
-          onRemove: (displayName) {
-            _confirmRemove(
-              item,
-              displayName,
-            );
-          },
-        );
-      },
-    ),
-  );
-}
 
   Widget _buildErrorView() {
     final colors = Theme.of(context).colorScheme;
+    final strings = UiStrings.of(context);
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      margin: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 24,
+      ),
       padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
         color: colors.errorContainer.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: colors.error.withValues(alpha: 0.2)),
+        border: Border.all(
+          color: colors.error.withValues(alpha: 0.2),
+        ),
       ),
       child: Column(
         children: [
-          Icon(Icons.error_outline_rounded, size: 48, color: colors.error),
+          Icon(
+            Icons.error_outline_rounded,
+            size: 48,
+            color: colors.error,
+          ),
           const SizedBox(height: 12),
           Text(
-            '加载数据失败',
+            strings.failedToLoadData,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w700,
@@ -371,8 +341,11 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 20),
           FilledButton.icon(
             onPressed: _loadItems,
-            icon: const Icon(Icons.refresh_rounded, size: 18),
-            label: const Text('重新加载'),
+            icon: const Icon(
+              Icons.refresh_rounded,
+              size: 18,
+            ),
+            label: Text(AppStrings.of(context).retry),
           ),
         ],
       ),
@@ -396,25 +369,37 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<void> _confirmRemove(AddedLanguage item, String displayName) async {
+  Future<void> _confirmRemove(
+    AddedLanguage item,
+    String displayName,
+  ) async {
+    final strings = UiStrings.of(context);
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-          title: const Text('移除语言'),
-          content: Text('确定要从列表中移除 “$displayName” 吗？'),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
+          title: Text(strings.removeLanguage),
+          content: Text(
+            strings.confirmRemoveLanguage(displayName),
+          ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: const Text('取消'),
+              onPressed: () =>
+                  Navigator.pop(dialogContext, false),
+              child: Text(strings.cancel),
             ),
             FilledButton.tonal(
-              onPressed: () => Navigator.pop(dialogContext, true),
+              onPressed: () =>
+                  Navigator.pop(dialogContext, true),
               style: FilledButton.styleFrom(
-                foregroundColor: Theme.of(context).colorScheme.error,
+                foregroundColor:
+                    Theme.of(context).colorScheme.error,
               ),
-              child: const Text('移除'),
+              child: Text(strings.remove),
             ),
           ],
         );
@@ -427,11 +412,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// -----------------------------------------------------------------------------
-// Component Widgets (提炼出的拆分组件)
-// -----------------------------------------------------------------------------
-
-/// 头部欢迎卡片组件
 class _HomeWelcomeBanner extends StatelessWidget {
   final int itemCount;
   final int countryCount;
@@ -448,6 +428,7 @@ class _HomeWelcomeBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final strings = UiStrings.of(context);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -459,15 +440,11 @@ class _HomeWelcomeBanner extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-  colors.primaryContainer,
-  colors.secondaryContainer,
-  colors.tertiaryContainer,
-],
-stops: const [
-  0,
-  0.52,
-  1,
-],
+              colors.primaryContainer,
+              colors.secondaryContainer,
+              colors.tertiaryContainer,
+            ],
+            stops: const [0, 0.52, 1],
           ),
           borderRadius: BorderRadius.circular(28),
           boxShadow: [
@@ -481,34 +458,26 @@ stops: const [
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: colors.surface.withValues(alpha: 0.9),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    Icons.translate_rounded,
-                    color: colors.primary,
-                    size: 26,
-                  ),
-                ),
-              ],
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: colors.surface.withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(
+                Icons.translate_rounded,
+                color: colors.primary,
+                size: 26,
+              ),
             ),
             const SizedBox(height: 18),
             Text(
-              '欢迎回来',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              strings.welcomeBack,
+              style: Theme.of(context)
+                  .textTheme
+                  .headlineSmall
+                  ?.copyWith(
                     fontWeight: FontWeight.w800,
                     color: colors.onPrimaryContainer,
                     letterSpacing: -0.5,
@@ -517,53 +486,64 @@ stops: const [
             const SizedBox(height: 6),
             Text(
               itemCount == 0
-                  ? '从这里开始建立属于你的世界语言库。'
-                  : '继续探索语言、文字与不同地区的表达方式。',
+                  ? strings.startBuildingLibrary
+                  : strings.continueExploring,
               style: TextStyle(
                 fontSize: 14,
                 height: 1.4,
-                color: colors.onPrimaryContainer.withValues(alpha: 0.85),
+                color: colors.onPrimaryContainer
+                    .withValues(alpha: 0.85),
               ),
             ),
             const SizedBox(height: 20),
             Row(
-  children: [
-    Expanded(
-      child: _StatisticChip(
-        value: itemCount.toString(),
-        label: '已加入',
-        accent: colors.primary,
-      ),
-    ),
-    const SizedBox(width: 8),
-    Expanded(
-      child: _StatisticChip(
-        value: countryCount.toString(),
-        label: '国家地区',
-        accent: colors.secondary,
-      ),
-    ),
-    const SizedBox(width: 8),
-    Expanded(
-      child: _StatisticChip(
-        value: variantCount.toString(),
-        label: '方言变体',
-        accent: colors.tertiary,
-      ),
-    ),
-  ],
-),
+              children: [
+                Expanded(
+                  child: _StatisticChip(
+                    value: itemCount.toString(),
+                    label: strings.added,
+                    accent: colors.primary,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _StatisticChip(
+                    value: countryCount.toString(),
+                    label: strings.countriesRegions,
+                    accent: colors.secondary,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _StatisticChip(
+                    value: variantCount.toString(),
+                    label: strings.dialectVariants,
+                    accent: colors.tertiary,
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 20),
             FilledButton.icon(
               onPressed: onExplorePressed,
-              icon: const Icon(Icons.explore_outlined, size: 18),
+              icon: const Icon(
+                Icons.explore_outlined,
+                size: 18,
+              ),
               style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
               ),
-              label: Text(itemCount == 0 ? '探索语言库' : '添加更多语言'),
+              label: Text(
+                itemCount == 0
+                    ? strings.exploreLanguageLibrary
+                    : strings.addMoreLanguages,
+              ),
             ),
           ],
         ),
@@ -572,19 +552,20 @@ stops: const [
   }
 }
 
-/// 仪表盘数据状态 Chip
 class _StatisticChip extends StatelessWidget {
   final String value;
   final String label;
   final Color accent;
 
-  const _StatisticChip({required this.value, required this.label, required this.accent,
-});
+  const _StatisticChip({
+    required this.value,
+    required this.label,
+    required this.accent,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final colors =
-        Theme.of(context).colorScheme;
+    final colors = Theme.of(context).colorScheme;
 
     return Container(
       padding: const EdgeInsets.symmetric(
@@ -592,20 +573,14 @@ class _StatisticChip extends StatelessWidget {
         vertical: 10,
       ),
       decoration: BoxDecoration(
-        color: accent.withValues(
-          alpha: 0.12,
-        ),
-        borderRadius:
-            BorderRadius.circular(16),
+        color: accent.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: accent.withValues(
-            alpha: 0.22,
-          ),
+          color: accent.withValues(alpha: 0.22),
         ),
       ),
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             value,
@@ -630,12 +605,15 @@ class _StatisticChip extends StatelessWidget {
   }
 }
 
-/// 语言卡片组件
 class _LanguageCard extends StatelessWidget {
   final AddedLanguage item;
   final String uiLanguageCode;
-  final Function(CountryConfig, LanguageConfig, LanguageVariantConfig?) onTap;
-  final Function(String) onRemove;
+  final void Function(
+    CountryConfig,
+    LanguageConfig,
+    LanguageVariantConfig?,
+  ) onTap;
+  final ValueChanged<String> onRemove;
 
   const _LanguageCard({
     super.key,
@@ -651,58 +629,59 @@ class _LanguageCard extends StatelessWidget {
     return String.fromCharCode(text.runes.first);
   }
 
-  Color _languageColor(
-  String code,
-) {
-  final normalized =
-      code.toLowerCase();
+  Color _languageColor(String code) {
+    final normalized = code.toLowerCase();
+    const palette = [
+      Colors.indigo,
+      Colors.teal,
+      Colors.deepOrange,
+      Colors.purple,
+      Colors.blue,
+      Colors.pink,
+      Colors.green,
+      Colors.amber,
+    ];
 
-  const palette = [
-    Colors.indigo,
-    Colors.teal,
-    Colors.deepOrange,
-    Colors.purple,
-    Colors.blue,
-    Colors.pink,
-    Colors.green,
-    Colors.amber,
-  ];
+    final index = normalized.codeUnits.fold<int>(
+          0,
+          (sum, unit) => sum + unit,
+        ) %
+        palette.length;
 
-  final index = normalized.codeUnits.fold<int>(
-        0,
-        (sum, unit) => sum + unit,
-      ) %
-      palette.length;
-
-  return palette[index];
-}
+    return palette[index];
+  }
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final strings = UiStrings.of(context);
     final accent = _languageColor(
-      item.variantCode ??
-          item.languageCode,
+      item.variantCode ?? item.languageCode,
     );
 
     final cardColor = Color.alphaBlend(
       accent.withValues(alpha: 0.07),
       colors.surfaceContainerLow,
     );
+
     final country = CountryConfig.findByCode(item.countryCode);
     final language = LanguageConfig.findByCode(item.languageCode);
     final variant = item.variantCode == null
         ? null
-        : LanguageVariantConfig.findByCode(item.variantCode!);
+        : LanguageVariantConfig.findByCode(
+            item.variantCode!,
+          );
 
-    final countryName = country?.nameOf(uiLanguageCode) ?? item.countryCode;
-    final languageName = language?.nameOf(uiLanguageCode) ?? item.languageCode;
+    final countryName =
+        country?.nameOf(uiLanguageCode) ?? item.countryCode;
+    final languageName =
+        language?.nameOf(uiLanguageCode) ?? item.languageCode;
     final variantName = variant?.nameOf(uiLanguageCode);
 
     final title = variantName ?? languageName;
-    final subtitle =
-        variantName == null ? countryName : '$languageName · $countryName';
-
+    final subtitle = variantName == null
+        ? countryName
+        : '$languageName · $countryName';
     final isClickable = country != null && language != null;
 
     return Material(
@@ -710,28 +689,26 @@ class _LanguageCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
-        onTap: isClickable ? () => onTap(country, language, variant) : null,
+        onTap: isClickable
+            ? () => onTap(country, language, variant)
+            : null,
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-  color: accent.withValues(
-    alpha: 0.22,
-  ),
-),
+              color: accent.withValues(alpha: 0.22),
+            ),
           ),
           child: Row(
             children: [
-              // 语言图标 / 首字母
               Container(
                 width: 48,
                 height: 48,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-color: accent.withValues(
-  alpha: 0.16,
-),                  borderRadius: BorderRadius.circular(16),
+                  color: accent.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Text(
                   _firstCharacter(title),
@@ -743,7 +720,6 @@ color: accent.withValues(
                 ),
               ),
               const SizedBox(width: 14),
-              // 信息主体
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -768,23 +744,22 @@ color: accent.withValues(
                     Row(
                       children: [
                         _CodeChip(
-  label: item.languageCode.toUpperCase(),
-  accent: accent,
-),
+                          label: item.languageCode.toUpperCase(),
+                          accent: accent,
+                        ),
                         if (item.variantCode != null) ...[
                           const SizedBox(width: 6),
                           _CodeChip(
-  label: item.variantCode!.toUpperCase(),
-  accent: accent,
-  isSecondary: true,
-),
+                            label: item.variantCode!.toUpperCase(),
+                            accent: accent,
+                            isSecondary: true,
+                          ),
                         ],
                       ],
                     ),
                   ],
                 ),
               ),
-              // 更多菜单按钮
               PopupMenuButton<String>(
                 icon: Icon(
                   Icons.more_vert_rounded,
@@ -799,13 +774,16 @@ color: accent.withValues(
                   }
                 },
                 itemBuilder: (_) => [
-                  const PopupMenuItem(
+                  PopupMenuItem<String>(
                     value: 'remove',
                     child: Row(
                       children: [
-                        Icon(Icons.delete_outline_rounded, size: 20),
-                        SizedBox(width: 10),
-                        Text('从首页移除'),
+                        const Icon(
+                          Icons.delete_outline_rounded,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 10),
+                        Text(strings.removeFromHome),
                       ],
                     ),
                   ),
@@ -819,7 +797,6 @@ color: accent.withValues(
   }
 }
 
-/// 语言代码小标签
 class _CodeChip extends StatelessWidget {
   final String label;
   final Color accent;
@@ -840,16 +817,11 @@ class _CodeChip extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: accent.withValues(
-          alpha: isSecondary
-              ? 0.20
-              : 0.11,
+          alpha: isSecondary ? 0.20 : 0.11,
         ),
-        borderRadius:
-            BorderRadius.circular(7),
+        borderRadius: BorderRadius.circular(7),
         border: Border.all(
-          color: accent.withValues(
-            alpha: 0.18,
-          ),
+          color: accent.withValues(alpha: 0.18),
         ),
       ),
       child: Text(
@@ -865,23 +837,33 @@ class _CodeChip extends StatelessWidget {
   }
 }
 
-/// 动态空状态视图
 class _EmptyLanguageView extends StatelessWidget {
   final VoidCallback onAddPressed;
 
-  const _EmptyLanguageView({required this.onAddPressed});
+  const _EmptyLanguageView({
+    required this.onAddPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final strings = UiStrings.of(context);
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+      margin: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 12,
+      ),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 24,
+        vertical: 36,
+      ),
       decoration: BoxDecoration(
         color: colors.surfaceContainerLow,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: colors.outlineVariant.withValues(alpha: 0.6)),
+        border: Border.all(
+          color: colors.outlineVariant.withValues(alpha: 0.6),
+        ),
       ),
       child: Column(
         children: [
@@ -889,7 +871,8 @@ class _EmptyLanguageView extends StatelessWidget {
             width: 64,
             height: 64,
             decoration: BoxDecoration(
-              color: colors.primaryContainer.withValues(alpha: 0.6),
+              color: colors.primaryContainer
+                  .withValues(alpha: 0.6),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -900,14 +883,15 @@ class _EmptyLanguageView extends StatelessWidget {
           ),
           const SizedBox(height: 18),
           Text(
-            '还没有加入语言',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+            strings.noLanguagesYet,
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 8),
           Text(
-            '选择一个国家，再加入你正在学习或使用的语言。',
+            strings.noLanguagesYetDescription,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 13,
@@ -919,7 +903,7 @@ class _EmptyLanguageView extends StatelessWidget {
           FilledButton.icon(
             onPressed: onAddPressed,
             icon: const Icon(Icons.add_rounded, size: 18),
-            label: const Text('添加第一门语言'),
+            label: Text(strings.addFirstLanguage),
           ),
         ],
       ),
@@ -927,13 +911,15 @@ class _EmptyLanguageView extends StatelessWidget {
   }
 }
 
-/// 加载骨架屏 (Skeleton Tile)
 class _LanguageCardSkeleton extends StatelessWidget {
   const _LanguageCardSkeleton();
 
   @override
   Widget build(BuildContext context) {
-    final baseColor = Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.4);
+    final baseColor = Theme.of(context)
+        .colorScheme
+        .surfaceContainerHighest
+        .withValues(alpha: 0.4);
 
     return Container(
       height: 90,

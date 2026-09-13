@@ -60,4 +60,4 @@ flutter test
 flutter run
 ```
 
-> The current `glyphora_language_core` dependency is configured as a local path dependency, so the same local package path must be available before running the project.
+`glyphora_language_core` is pulled from the `flutter-languages-config` GitHub repository, so the project no longer depends on a machine-specific local Windows path.

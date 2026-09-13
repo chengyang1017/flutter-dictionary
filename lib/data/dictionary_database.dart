@@ -65,6 +65,7 @@ class DictionaryDatabase {
 
   Future<List<WordEntry>> getWords({
     required String languageCode,
+    required String queryLanguage,
     String keyword = '',
     String glossLanguage = 'zh',
     int limit = 500,
@@ -83,6 +84,10 @@ class DictionaryDatabase {
 
       return repository.search(
         languageCode: normalizedLanguage,
+        queryLanguage:
+            _normalizeLanguageCode(
+          queryLanguage,
+        ),
         query: keyword,
         glossLanguage:
             _normalizeLanguageCode(

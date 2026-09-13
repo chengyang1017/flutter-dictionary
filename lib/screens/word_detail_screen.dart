@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 
 import '../data/lang_schema_service.dart';
+import '../localization/app_strings.dart';
 import '../models/lang_schema.dart';
 import '../models/word_entry.dart';
 
@@ -23,7 +24,8 @@ class WordDetailScreen
       appBar: AppBar(
         title: Text(
           entry.word.isEmpty
-              ? '词条详情'
+              ? AppStrings.of(context)
+                  .entryDetails
               : entry.word,
         ),
       ),
@@ -103,14 +105,17 @@ class WordDetailScreen
   Widget _buildCanonicalSenses(
     BuildContext context,
   ) {
+    final strings =
+        AppStrings.of(context);
+
     return _buildCard(
       context,
-      title: '义项',
+      title: strings.senses,
       children: entry.senses.map(
         (sense) {
           final glosses =
               sense.glosses.isEmpty
-                  ? '暂无释义'
+                  ? strings.noGloss
                   : sense.glosses.join(' / ');
 
           return Padding(
@@ -122,7 +127,9 @@ class WordDetailScreen
                   CrossAxisAlignment.start,
               children: [
                 Text(
-                  '义项 ${sense.number}',
+                  strings.senseNumber(
+                    sense.number,
+                  ),
                   style: Theme.of(context)
                       .textTheme
                       .labelLarge,
@@ -146,6 +153,8 @@ class WordDetailScreen
   Widget _buildMatchedForms(
     BuildContext context,
   ) {
+    final strings =
+        AppStrings.of(context);
     final searchedForms = entry.matchedForms
         .map((analysis) => analysis.form)
         .where((form) => form.trim().isNotEmpty)
@@ -154,11 +163,13 @@ class WordDetailScreen
 
     return _buildCard(
       context,
-      title: '搜索命中',
+      title: strings.searchMatches,
       children: [
         if (searchedForms.isNotEmpty) ...[
           Text(
-            '你搜索：$searchedForms',
+            strings.searchedFor(
+              searchedForms,
+            ),
             style: Theme.of(context)
                 .textTheme
                 .bodyLarge,
@@ -166,7 +177,9 @@ class WordDetailScreen
           const SizedBox(height: 6),
         ],
         Text(
-          '原形：${entry.word}',
+          strings.lemmaValue(
+            entry.word,
+          ),
           style: Theme.of(context)
               .textTheme
               .bodyLarge,
@@ -187,6 +200,8 @@ class WordDetailScreen
   Widget _buildFullParadigm(
     BuildContext context,
   ) {
+    final strings =
+        AppStrings.of(context);
     final groups = _groupAllForms(
       entry.allForms,
     );
@@ -198,8 +213,9 @@ class WordDetailScreen
 
     return _buildCard(
       context,
-      title:
-          '完整词形变化 · ${entry.allForms.length}',
+      title: strings.fullParadigm(
+        entry.allForms.length,
+      ),
       children: groupNames
           .map(
             (groupName) => ExpansionTile(
@@ -208,9 +224,15 @@ class WordDetailScreen
                   const EdgeInsets.only(
                 bottom: 8,
               ),
-              title: Text(groupName),
+              title: Text(
+                strings.morphologyGroupLabel(
+                  groupName,
+                ),
+              ),
               subtitle: Text(
-                '${groups[groupName]!.length} 个词形',
+                strings.formsCount(
+                  groups[groupName]!.length,
+                ),
               ),
               children: groups[groupName]!
                   .map(
@@ -259,20 +281,20 @@ class WordDetailScreen
     final preferred =
         partOfSpeech == 'noun'
             ? const [
-                '单数',
-                '复数',
-                '所属',
-                '格',
-                '疑问',
-                '特殊形',
+                'singular',
+                'plural',
+                'possessive',
+                'case',
+                'interrogative',
+                'special',
               ]
             : const [
-                '不定式',
-                '过去时',
-                '现在时',
-                '将来时',
-                '人称',
-                '否定',
+                'infinitive',
+                'past',
+                'present',
+                'future',
+                'person',
+                'negative',
               ];
 
     return [
@@ -290,13 +312,13 @@ class WordDetailScreen
       if (_featureBool(
         analysis.features['special'],
       )) {
-        return '特殊形';
+        return 'special';
       }
 
       if (_featureBool(
         analysis.features['interrogative'],
       )) {
-        return '疑问';
+        return 'interrogative';
       }
 
       final possessive = _featureText(
@@ -305,7 +327,7 @@ class WordDetailScreen
 
       if (possessive.isNotEmpty &&
           possessive != 'none') {
-        return '所属';
+        return 'possessive';
       }
 
       final caseName = _featureText(
@@ -314,17 +336,17 @@ class WordDetailScreen
 
       if (caseName.isNotEmpty &&
           caseName != 'nominative') {
-        return '格';
+        return 'case';
       }
 
       if (_featureText(
             analysis.features['number'],
           ) ==
           'pl') {
-        return '复数';
+        return 'plural';
       }
 
-      return '单数';
+      return 'singular';
     }
 
     if (analysis.partOfSpeech == 'verb') {
@@ -332,34 +354,34 @@ class WordDetailScreen
             analysis.features['form_type'],
           ) ==
           'infinitive') {
-        return '不定式';
+        return 'infinitive';
       }
 
       if (_featureBool(
         analysis.features['negative'],
       )) {
-        return '否定';
+        return 'negative';
       }
 
       switch (_featureText(
         analysis.features['tense'],
       )) {
         case 'past':
-          return '过去时';
+          return 'past';
         case 'present':
-          return '现在时';
+          return 'present';
         case 'future':
-          return '将来时';
+          return 'future';
       }
 
       if (_featureText(
         analysis.features['person'],
       ).isNotEmpty) {
-        return '人称';
+        return 'person';
       }
     }
 
-    return '其他';
+    return 'other';
   }
 
   Widget _buildParadigmRow(
@@ -367,7 +389,10 @@ class WordDetailScreen
     MorphologyAnalysis analysis,
   ) {
     final summary =
-        _analysisSummary(analysis);
+        _analysisSummary(
+      context,
+      analysis,
+    );
 
     return Padding(
       padding: const EdgeInsets.symmetric(
@@ -401,6 +426,7 @@ class WordDetailScreen
   }
 
   String _analysisSummary(
+    BuildContext context,
     MorphologyAnalysis analysis,
   ) {
     final keys =
@@ -428,7 +454,10 @@ class WordDetailScreen
       if (value is bool) {
         if (value) {
           parts.add(
-            _featureLabel(key),
+            _featureLabel(
+              context,
+              key,
+            ),
           );
         }
         continue;
@@ -440,6 +469,7 @@ class WordDetailScreen
 
       parts.add(
         _featureValue(
+          context,
           key,
           value,
         ),
@@ -540,6 +570,7 @@ class WordDetailScreen
                       width: 88,
                       child: Text(
                         _featureLabel(
+                          context,
                           item.key,
                         ),
                         style:
@@ -551,6 +582,7 @@ class WordDetailScreen
                     Expanded(
                       child: SelectableText(
                         _featureValue(
+                          context,
                           item.key,
                           item.value,
                         ),
@@ -569,14 +601,19 @@ class WordDetailScreen
   Widget _buildCanonicalMetadata(
     BuildContext context,
   ) {
+    final strings =
+        AppStrings.of(context);
     final rows = <MapEntry<String, String>>[
       MapEntry(
-        '词类',
-        _partOfSpeechLabel(entry.type),
+        strings.partOfSpeech,
+        _partOfSpeechLabel(
+          context,
+          entry.type,
+        ),
       ),
       if (entry.languageCode != null)
         MapEntry(
-          '语言',
+          strings.language,
           entry.languageCode!,
         ),
       if (entry.lexemeId != null)
@@ -585,21 +622,26 @@ class WordDetailScreen
           entry.lexemeId!,
         ),
       MapEntry(
-        '已生成词形',
+        strings.generatedForms,
         '${entry.formCount}',
       ),
       if (entry.matchTypes.isNotEmpty)
         MapEntry(
-          '命中方式',
+          strings.matchMethod,
           entry.matchTypes
-              .map(_matchLabel)
+              .map(
+                (value) => _matchLabel(
+                  context,
+                  value,
+                ),
+              )
               .join(' / '),
         ),
     ];
 
     return _buildCard(
       context,
-      title: '词条信息',
+      title: strings.entryInformation,
       children: rows
           .map(
             (row) => Padding(
@@ -725,6 +767,7 @@ class WordDetailScreen
       if (_isUseful(entry.type))
         entry.isCanonical
             ? _partOfSpeechLabel(
+                context,
                 entry.type,
               )
             : entry.type,
@@ -746,7 +789,8 @@ class WordDetailScreen
         children: [
           Text(
             entry.word.isEmpty
-                ? '未命名词条'
+                ? AppStrings.of(context)
+                    .unnamedEntry
                 : entry.word,
             style: Theme.of(context)
                 .textTheme
@@ -773,6 +817,7 @@ class WordDetailScreen
             const SizedBox(height: 10),
             Text(
               _matchLabel(
+                context,
                 entry.primaryMatch!,
               ),
               style: Theme.of(context)
@@ -985,136 +1030,39 @@ class WordDetailScreen
   }
 
   String _partOfSpeechLabel(
+    BuildContext context,
     String value,
   ) {
-    switch (value) {
-      case 'noun':
-        return '名词';
-      case 'verb':
-        return '动词';
-      default:
-        return value;
-    }
+    return AppStrings.of(context)
+        .partOfSpeechLabel(value);
   }
 
   String _matchLabel(
+    BuildContext context,
     String value,
   ) {
-    switch (value) {
-      case 'lemma':
-        return '原形命中';
-      case 'form':
-        return '词形命中';
-      case 'gloss':
-        return '释义命中';
-      default:
-        return value;
-    }
+    return AppStrings.of(context)
+        .matchTypeLabel(value);
   }
 
   String _featureLabel(
+    BuildContext context,
     String key,
   ) {
-    switch (key) {
-      case 'form_type':
-        return '形态类型';
-      case 'tense':
-        return '时态';
-      case 'person':
-        return '人称';
-      case 'negative':
-        return '否定';
-      case 'number':
-        return '数';
-      case 'possessive':
-        return '所属';
-      case 'case':
-        return '格';
-      case 'interrogative':
-        return '疑问';
-      case 'special':
-        return '特殊形';
-      default:
-        return key;
-    }
+    return AppStrings.of(context)
+        .featureLabel(key);
   }
 
   String _featureValue(
+    BuildContext context,
     String key,
     dynamic value,
   ) {
-    if (value is bool) {
-      return value ? '是' : '否';
-    }
-
-    final text = value?.toString() ?? '';
-
-    if (key == 'tense') {
-      switch (text) {
-        case 'past':
-          return '过去时';
-        case 'present':
-          return '现在时';
-        case 'future':
-          return '将来时';
-      }
-    }
-
-    if (key == 'person') {
-      switch (text) {
-        case '1sg':
-          return '第一人称单数';
-        case '2sg':
-          return '第二人称单数';
-        case '3sg':
-          return '第三人称单数';
-        case '1pl':
-          return '第一人称复数';
-        case '2pl':
-          return '第二人称复数';
-        case '3pl':
-          return '第三人称复数';
-      }
-    }
-
-    if (key == 'number') {
-      switch (text) {
-        case 'sg':
-          return '单数';
-        case 'pl':
-          return '复数';
-      }
-    }
-
-    if (key == 'case') {
-      switch (text) {
-        case 'nominative':
-          return '主格';
-        case 'genitive':
-          return '领属格';
-        case 'dative':
-          return '向格';
-        case 'accusative':
-          return '宾格';
-        case 'locative':
-          return '位格';
-        case 'ablative':
-          return '从格';
-        case 'instrumental':
-          return '工具格';
-      }
-    }
-
-    if (key == 'form_type') {
-      switch (text) {
-        case 'finite':
-          return '限定动词';
-        case 'infinitive':
-          return '不定式';
-      }
-    }
-
-    return text;
+    return AppStrings.of(context)
+        .featureValue(
+      key,
+      value,
+    );
   }
 
   bool _isUseful(String value) {

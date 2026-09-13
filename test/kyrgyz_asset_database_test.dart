@@ -58,6 +58,7 @@ void main() {
       final results =
           await dictionaryRepository.search(
         languageCode: 'ky',
+        queryLanguage: 'zh',
         query: 'алдым',
         glossLanguage: 'zh',
       );
@@ -92,26 +93,47 @@ void main() {
   );
 
   test(
-    'bundled ky.db resolves multilingual buy glosses',
+    'bundled ky.db resolves glosses in the declared language',
     () async {
-      for (final query in [
-        'buy',
-        '买',
-        'покупать',
-      ]) {
+      for (final testCase in const {
+        'en': 'buy',
+        'zh': '买',
+        'ru': 'покупать',
+      }.entries) {
         final results =
             await dictionaryRepository.search(
           languageCode: 'ky',
-          query: query,
+          queryLanguage: testCase.key,
+          query: testCase.value,
           glossLanguage: 'zh',
         );
 
         expect(
           results.map((entry) => entry.word),
           contains('алуу'),
-          reason: 'Failed gloss query: $query',
+          reason:
+              'Failed gloss query: '
+              '${testCase.key}:${testCase.value}',
         );
       }
+    },
+  );
+
+  test(
+    'bundled ky.db does not cross-match gloss languages',
+    () async {
+      final results =
+          await dictionaryRepository.search(
+        languageCode: 'ky',
+        queryLanguage: 'zh',
+        query: 'buy',
+        glossLanguage: 'zh',
+      );
+
+      expect(
+        results.map((entry) => entry.word),
+        isNot(contains('алуу')),
+      );
     },
   );
 
@@ -121,6 +143,7 @@ void main() {
       final results =
           await dictionaryRepository.search(
         languageCode: 'ky',
+        queryLanguage: 'zh',
         query: 'айтуу',
         glossLanguage: 'zh',
       );
@@ -153,6 +176,7 @@ void main() {
       final results =
           await dictionaryRepository.search(
         languageCode: 'ky',
+        queryLanguage: 'zh',
         query: 'мугалим',
         glossLanguage: 'zh',
       );

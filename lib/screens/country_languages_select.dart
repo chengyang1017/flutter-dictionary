@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:glyphora_language_core/glyphora_language_core.dart';
 
+import '../localization/ui_strings.dart';
 import 'language_overview_screen.dart';
 
-class CountryLanguagesSelect
-    extends StatelessWidget {
+class CountryLanguagesSelect extends StatelessWidget {
   final CountryConfig country;
 
   const CountryLanguagesSelect({
@@ -12,25 +12,22 @@ class CountryLanguagesSelect
     required this.country,
   });
 
-  String _uiLanguageCode(
-    BuildContext context,
-  ) {
-    return Localizations.localeOf(context)
-        .languageCode;
+  String _uiLanguageCode(BuildContext context) {
+    return Localizations.localeOf(context).languageCode;
   }
 
   @override
   Widget build(BuildContext context) {
-    final uiLanguageCode =
-        _uiLanguageCode(context);
-
-    final countryLanguages =
-        country.countryLanguages;
+    final uiLanguageCode = _uiLanguageCode(context);
+    final strings = UiStrings.of(context);
+    final countryLanguages = country.countryLanguages;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          '${country.nameOf(uiLanguageCode)}的语言',
+          strings.countryLanguages(
+            country.nameOf(uiLanguageCode),
+          ),
         ),
       ),
       body: _buildBody(
@@ -43,14 +40,13 @@ class CountryLanguagesSelect
 
   Widget _buildBody(
     BuildContext context,
-    List<CountryLanguageConfig>
-        countryLanguages,
+    List<CountryLanguageConfig> countryLanguages,
     String uiLanguageCode,
   ) {
     if (countryLanguages.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
-          '这个国家暂时没有语言资料',
+          UiStrings.of(context).noCountryLanguageData,
         ),
       );
     }
@@ -72,19 +68,14 @@ class CountryLanguagesSelect
     CountryLanguageConfig relation,
     String uiLanguageCode,
   ) {
+    final strings = UiStrings.of(context);
     final language = relation.language;
 
     if (language == null) {
       return ListTile(
-        leading: const Icon(
-          Icons.error_outline,
-        ),
-        title: Text(
-          relation.languageCode,
-        ),
-        subtitle: const Text(
-          '语言资料不存在',
-        ),
+        leading: const Icon(Icons.error_outline),
+        title: Text(relation.languageCode),
+        subtitle: Text(strings.languageDataMissing),
       );
     }
 
@@ -94,21 +85,12 @@ class CountryLanguagesSelect
       return ListTile(
         leading: _buildFlag(language),
         title: Text(
-          language.nameOf(
-            uiLanguageCode,
-          ),
+          language.nameOf(uiLanguageCode),
         ),
-        subtitle: Text(
-          language.code,
-        ),
-        trailing: const Icon(
-          Icons.chevron_right,
-        ),
+        subtitle: Text(language.code),
+        trailing: const Icon(Icons.chevron_right),
         onTap: () {
-          _openLanguage(
-            context,
-            language,
-          );
+          _openLanguage(context, language);
         },
       );
     }
@@ -116,13 +98,9 @@ class CountryLanguagesSelect
     return ExpansionTile(
       leading: _buildFlag(language),
       title: Text(
-        language.nameOf(
-          uiLanguageCode,
-        ),
+        language.nameOf(uiLanguageCode),
       ),
-      subtitle: const Text(
-        '选择语言或方言',
-      ),
+      subtitle: Text(strings.selectLanguageOrDialect),
       children: _buildVariantTiles(
         context,
         relation,
@@ -132,14 +110,10 @@ class CountryLanguagesSelect
     );
   }
 
-  Widget _buildFlag(
-    LanguageConfig language,
-  ) {
+  Widget _buildFlag(LanguageConfig language) {
     return Text(
       language.flag,
-      style: const TextStyle(
-        fontSize: 32,
-      ),
+      style: const TextStyle(fontSize: 32),
     );
   }
 
@@ -149,51 +123,39 @@ class CountryLanguagesSelect
     LanguageConfig language,
     String uiLanguageCode,
   ) {
+    final strings = UiStrings.of(context);
     final variants = relation.variants;
 
     return [
       if (relation.allowDirectSelection)
         ListTile(
-          contentPadding:
-              const EdgeInsets.only(
+          contentPadding: const EdgeInsets.only(
             left: 72,
             right: 16,
           ),
           title: Text(
-            '${language.nameOf(uiLanguageCode)}（全部）',
+            strings.allLanguage(
+              language.nameOf(uiLanguageCode),
+            ),
           ),
-          subtitle: Text(
-            language.code,
-          ),
-          trailing: const Icon(
-            Icons.chevron_right,
-          ),
+          subtitle: Text(language.code),
+          trailing: const Icon(Icons.chevron_right),
           onTap: () {
-            _openLanguage(
-              context,
-              language,
-            );
+            _openLanguage(context, language);
           },
         ),
       ...variants.map(
         (variant) {
           return ListTile(
-            contentPadding:
-                const EdgeInsets.only(
+            contentPadding: const EdgeInsets.only(
               left: 72,
               right: 16,
             ),
             title: Text(
-              variant.nameOf(
-                uiLanguageCode,
-              ),
+              variant.nameOf(uiLanguageCode),
             ),
-            subtitle: Text(
-              variant.code,
-            ),
-            trailing: const Icon(
-              Icons.chevron_right,
-            ),
+            subtitle: Text(variant.code),
+            trailing: const Icon(Icons.chevron_right),
             onTap: () {
               _openLanguage(
                 context,

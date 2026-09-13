@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_application_1/screens/country_languages_select.dart';
 import 'package:glyphora_language_core/glyphora_language_core.dart';
 
+import '../localization/ui_strings.dart';
+
 class CountrySelect extends StatefulWidget {
   const CountrySelect({
     super.key,
@@ -13,23 +15,18 @@ class CountrySelect extends StatefulWidget {
   final String? initialCountryCode;
 
   @override
-  State<CountrySelect> createState() =>
-      _CountrySelectState();
+  State<CountrySelect> createState() => _CountrySelectState();
 }
 
 class _CountrySelectState extends State<CountrySelect> {
   String _keyword = '';
 
   String get _uiLanguageCode {
-    return Localizations.maybeLocaleOf(context)
-            ?.languageCode ??
-        'zh';
+    return Localizations.maybeLocaleOf(context)?.languageCode ?? 'zh';
   }
 
   List<CountryConfig> get _filteredCountries {
-    final countries = CountryConfig.sortedBy(
-      _uiLanguageCode,
-    );
+    final countries = CountryConfig.sortedBy(_uiLanguageCode);
 
     if (_keyword.isEmpty) {
       return countries;
@@ -42,9 +39,11 @@ class _CountrySelectState extends State<CountrySelect> {
 
   @override
   Widget build(BuildContext context) {
+    final strings = UiStrings.of(context);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('选择国家'),
+        title: Text(strings.selectCountry),
       ),
       body: SafeArea(
         child: Column(
@@ -60,6 +59,8 @@ class _CountrySelectState extends State<CountrySelect> {
   }
 
   Widget _buildSearchField() {
+    final strings = UiStrings.of(context);
+
     return Padding(
       padding: const EdgeInsets.all(12),
       child: TextField(
@@ -69,7 +70,7 @@ class _CountrySelectState extends State<CountrySelect> {
           });
         },
         decoration: InputDecoration(
-          hintText: '搜索国家',
+          hintText: strings.searchCountry,
           prefixIcon: const Icon(Icons.search),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(28),
@@ -83,8 +84,10 @@ class _CountrySelectState extends State<CountrySelect> {
     final countries = _filteredCountries;
 
     if (countries.isEmpty) {
-      return const Center(
-        child: Text('没有找到这个国家'),
+      return Center(
+        child: Text(
+          UiStrings.of(context).countryNotFound,
+        ),
       );
     }
 
@@ -92,15 +95,12 @@ class _CountrySelectState extends State<CountrySelect> {
       itemCount: countries.length,
       itemBuilder: (context, index) {
         final country = countries[index];
-
         return _buildCountryTile(country);
       },
     );
   }
 
-  Widget _buildCountryTile(
-    CountryConfig country,
-  ) {
+  Widget _buildCountryTile(CountryConfig country) {
     final isSelected =
         widget.initialCountryCode?.toUpperCase() ==
             country.code.toUpperCase();
@@ -108,27 +108,20 @@ class _CountrySelectState extends State<CountrySelect> {
     return ListTile(
       leading: Text(
         country.flag,
-        style: const TextStyle(
-          fontSize: 40,
-        ),
+        style: const TextStyle(fontSize: 40),
       ),
       title: Text(
         country.nameOf(_uiLanguageCode),
       ),
-      subtitle: Text(
-        country.code,
-      ),
+      subtitle: Text(country.code),
       trailing: isSelected
           ? Icon(
               Icons.check,
-              color: Theme.of(context)
-                  .colorScheme
-                  .primary,
+              color: Theme.of(context).colorScheme.primary,
             )
           : null,
       onTap: () async {
-        final language =
-            await Navigator.push<LanguageConfig>(
+        final language = await Navigator.push<LanguageConfig>(
           context,
           MaterialPageRoute(
             builder: (context) {
@@ -139,15 +132,12 @@ class _CountrySelectState extends State<CountrySelect> {
           ),
         );
 
-        if (!mounted ||
-            language == null) {
+        if (!mounted || language == null) {
           return;
         }
 
-        Navigator.pop(
-          context,
-          language,
-        );
+        widget.onSelected?.call(country);
+        Navigator.pop(context, language);
       },
     );
   }

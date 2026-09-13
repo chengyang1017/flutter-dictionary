@@ -83,8 +83,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final strings = UiStrings.of(context);
-
     return Scaffold(
       body: SafeArea(
         child: RefreshIndicator(

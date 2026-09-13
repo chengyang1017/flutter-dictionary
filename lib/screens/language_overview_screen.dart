@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:glyphora_language_core/glyphora_language_core.dart';
 
+import '../data/added_language_store.dart';
+import '../localization/ui_strings.dart';
+import '../models/added_language.dart';
 import 'word_list_screen.dart';
 
-import '../data/added_language_store.dart';
-import '../models/added_language.dart';
-
-class LanguageOverviewScreen
-    extends StatelessWidget {
+class LanguageOverviewScreen extends StatelessWidget {
   final CountryConfig country;
   final LanguageConfig language;
   final LanguageVariantConfig? variant;
@@ -19,92 +18,72 @@ class LanguageOverviewScreen
     this.variant,
   });
 
-  String _uiLanguageCode(
-    BuildContext context,
-  ) {
-    return Localizations.localeOf(context)
-        .languageCode;
+  String _uiLanguageCode(BuildContext context) {
+    return Localizations.localeOf(context).languageCode;
   }
 
-  String _displayName(
-    String uiLanguageCode,
-  ) {
-    return variant?.nameOf(
-          uiLanguageCode,
-        ) ??
-        language.nameOf(
-          uiLanguageCode,
-        );
-  }
-
-  String _breadcrumb(
-    String uiLanguageCode,
-  ) {
-    final countryName =
-        country.nameOf(uiLanguageCode);
-
-    final languageName =
+  String _displayName(String uiLanguageCode) {
+    return variant?.nameOf(uiLanguageCode) ??
         language.nameOf(uiLanguageCode);
+  }
 
-    final variantName =
-        variant?.nameOf(uiLanguageCode);
+  String _breadcrumb(String uiLanguageCode) {
+    final countryName = country.nameOf(uiLanguageCode);
+    final languageName = language.nameOf(uiLanguageCode);
+    final variantName = variant?.nameOf(uiLanguageCode);
 
     if (variantName == null) {
       return '$countryName  >  $languageName';
     }
 
-    return '$countryName  >  '
-        '$languageName  >  $variantName';
+    return '$countryName  >  $languageName  >  $variantName';
   }
 
   @override
   Widget build(BuildContext context) {
-    final uiLanguageCode =
-        _uiLanguageCode(context);
+    final uiLanguageCode = _uiLanguageCode(context);
+    final strings = UiStrings.of(context);
 
     return Scaffold(
       appBar: AppBar(
-  title: Text(
-    _breadcrumb(uiLanguageCode),
-    style: const TextStyle(
-      fontSize: 14,
-      fontWeight: FontWeight.w600,
-    ),
-  ),
-  actions: [
-    IconButton(
-      tooltip: '加入首页',
-      icon: const Icon(
-        Icons.add_circle_outline,
+        title: Text(
+          _breadcrumb(uiLanguageCode),
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        actions: [
+          IconButton(
+            tooltip: strings.addToHome,
+            icon: const Icon(Icons.add_circle_outline),
+            onPressed: () async {
+              final added =
+                  await AddedLanguageStore.instance.add(
+                AddedLanguage(
+                  countryCode: country.code,
+                  languageCode: language.code,
+                  variantCode: variant?.code,
+                ),
+              );
+
+              if (!context.mounted) {
+                return;
+              }
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    added
+                        ? UiStrings.of(context).addedToHome
+                        : UiStrings.of(context).alreadyOnHome,
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
-      onPressed: () async {
-        final added =
-            await AddedLanguageStore.instance.add(
-          AddedLanguage(
-            countryCode: country.code,
-            languageCode: language.code,
-            variantCode: variant?.code,
-          ),
-        );
-
-        if (!context.mounted) {
-          return;
-        }
-
-        ScaffoldMessenger.of(context)
-            .showSnackBar(
-          SnackBar(
-            content: Text(
-              added
-                  ? '已经加入首页'
-                  : '首页中已经存在',
-            ),
-          ),
-        );
-      },
-    ),
-  ],
-),
       body: SafeArea(
         child: _buildBody(
           context,
@@ -140,8 +119,8 @@ class LanguageOverviewScreen
     BuildContext context,
     String uiLanguageCode,
   ) {
-    final languageName =
-        _displayName(uiLanguageCode);
+    final languageName = _displayName(uiLanguageCode);
+    final strings = UiStrings.of(context);
 
     return Container(
       width: double.infinity,
@@ -150,13 +129,10 @@ class LanguageOverviewScreen
         color: Theme.of(context)
             .colorScheme
             .surfaceContainerHighest,
-        borderRadius:
-            BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
-        '$languageName 的语言资料入口。\n\n'
-        '点击下面的模块查看字母表、词条、'
-        '词缀规则、语法说明、日常短语和词形分析。',
+        strings.languageOverview(languageName),
         style: const TextStyle(
           fontSize: 14,
           height: 1.45,
@@ -171,8 +147,7 @@ class LanguageOverviewScreen
   ) {
     return GridView.builder(
       shrinkWrap: true,
-      physics:
-          const NeverScrollableScrollPhysics(),
+      physics: const NeverScrollableScrollPhysics(),
       itemCount: _modules.length,
       gridDelegate:
           const SliverGridDelegateWithFixedCrossAxisCount(
@@ -197,8 +172,7 @@ class LanguageOverviewScreen
     String uiLanguageCode,
   ) {
     return InkWell(
-      borderRadius:
-          BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(14),
       onTap: () {
         _openModule(
           context,
@@ -215,10 +189,7 @@ class LanguageOverviewScreen
                 color: Theme.of(context)
                     .colorScheme
                     .surfaceContainerHighest,
-                borderRadius:
-                    BorderRadius.circular(
-                  12,
-                ),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                 module.icon,
@@ -228,7 +199,7 @@ class LanguageOverviewScreen
           ),
           const SizedBox(height: 8),
           Text(
-            module.title,
+            _moduleTitle(context, module.type),
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 13,
@@ -245,8 +216,7 @@ class LanguageOverviewScreen
     LanguageModule module,
     String uiLanguageCode,
   ) {
-    if (module.type ==
-        LanguageModuleType.words) {
+    if (module.type == LanguageModuleType.words) {
       Navigator.push<void>(
         context,
         MaterialPageRoute(
@@ -258,7 +228,6 @@ class LanguageOverviewScreen
           },
         ),
       );
-
       return;
     }
 
@@ -268,46 +237,36 @@ class LanguageOverviewScreen
         builder: (_) {
           return LanguageModuleScreen(
             module: module,
-            languageName:
-                _displayName(
-              uiLanguageCode,
-            ),
+            languageName: _displayName(uiLanguageCode),
           );
         },
       ),
     );
   }
 
-  static const List<LanguageModule>
-      _modules = [
+  static const List<LanguageModule> _modules = [
     LanguageModule(
       type: LanguageModuleType.alphabet,
-      title: '字母表',
       icon: Icons.abc,
     ),
     LanguageModule(
       type: LanguageModuleType.words,
-      title: '单词',
       icon: Icons.menu_book_outlined,
     ),
     LanguageModule(
       type: LanguageModuleType.affixes,
-      title: '词缀规则',
       icon: Icons.account_tree_outlined,
     ),
     LanguageModule(
       type: LanguageModuleType.grammar,
-      title: '语法说明',
       icon: Icons.subject,
     ),
     LanguageModule(
       type: LanguageModuleType.phrases,
-      title: '日常短语',
       icon: Icons.chat_bubble_outline,
     ),
     LanguageModule(
       type: LanguageModuleType.morphology,
-      title: '词形分析',
       icon: Icons.schema_outlined,
     ),
   ];
@@ -324,18 +283,37 @@ enum LanguageModuleType {
 
 class LanguageModule {
   final LanguageModuleType type;
-  final String title;
   final IconData icon;
 
   const LanguageModule({
     required this.type,
-    required this.title,
     required this.icon,
   });
 }
 
-class LanguageModuleScreen
-    extends StatelessWidget {
+String _moduleTitle(
+  BuildContext context,
+  LanguageModuleType type,
+) {
+  final strings = UiStrings.of(context);
+
+  switch (type) {
+    case LanguageModuleType.alphabet:
+      return strings.alphabet;
+    case LanguageModuleType.words:
+      return strings.words;
+    case LanguageModuleType.affixes:
+      return strings.affixRules;
+    case LanguageModuleType.grammar:
+      return strings.grammar;
+    case LanguageModuleType.phrases:
+      return strings.dailyPhrases;
+    case LanguageModuleType.morphology:
+      return strings.morphologyAnalysis;
+  }
+}
+
+class LanguageModuleScreen extends StatelessWidget {
   final LanguageModule module;
   final String languageName;
 
@@ -347,19 +325,17 @@ class LanguageModuleScreen
 
   @override
   Widget build(BuildContext context) {
+    final title = _moduleTitle(context, module.type);
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          '$languageName · ${module.title}',
-        ),
+        title: Text('$languageName · $title'),
       ),
       body: Center(
         child: Text(
-          '$languageName\n${module.title}',
+          '$languageName\n$title',
           textAlign: TextAlign.center,
-          style: Theme.of(context)
-              .textTheme
-              .headlineSmall,
+          style: Theme.of(context).textTheme.headlineSmall,
         ),
       ),
     );
